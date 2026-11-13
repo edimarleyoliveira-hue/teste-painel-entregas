@@ -21,6 +21,14 @@ function responderErro(Throwable $e): void
     ], 500);
 }
 
+// Lê um parâmetro da URL como texto. Ignora valores que não são texto (ex.: ?empresa[]=x).
+function parametroGet(string $nome): string
+{
+    $valor = $_GET[$nome] ?? '';
+
+    return is_string($valor) ? trim($valor) : '';
+}
+
 /**
  * Status possíveis:
  * - entregue: possui data de entrega;
