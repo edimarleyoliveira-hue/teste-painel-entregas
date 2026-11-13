@@ -100,7 +100,7 @@ async function carregarEntregas() {
   }
 
   // Mantém selecionadas só as que continuam visíveis e não entregues.
-  const selecionaveis = new Set(entregas.filter((e) => e.status !== 'entregue').map((e) => e.id));
+  const selecionaveis = new Set(idsSelecionaveis());
   selecionadas.forEach((id) => {
     if (!selecionaveis.has(id)) {
       selecionadas.delete(id);
@@ -111,10 +111,23 @@ async function carregarEntregas() {
   atualizarBotaoLote();
 }
 
+// Ids das entregas não entregues que estão aparecendo na lista agora.
+function idsSelecionaveis() {
+  return entregas.filter((e) => e.status !== 'entregue').map((e) => Number(e.id));
+}
+
 function atualizarBotaoLote() {
   const botao = document.getElementById('marcar-selecionadas');
   botao.textContent = `Marcar selecionadas como entregues (${selecionadas.size})`;
   botao.disabled = enviando || selecionadas.size === 0;
+
+  // Caixa "selecionar todas": marcada se todas estão selecionadas,
+  // "meio marcada" (indeterminate) se só algumas, e desabilitada se não há o que selecionar.
+  const todas = document.getElementById('selecionar-todas');
+  const total = idsSelecionaveis().length;
+  todas.disabled = total === 0;
+  todas.checked = total > 0 && selecionadas.size === total;
+  todas.indeterminate = selecionadas.size > 0 && selecionadas.size < total;
 }
 
 function renderizarTabela() {
@@ -219,6 +232,20 @@ document.getElementById('lista-entregas').addEventListener('click', async (event
   if (!deuCerto) {
     botao.disabled = false; // em caso de erro, o usuário pode tentar de novo
   }
+});
+
+// Seleciona (ou desmarca) de uma vez todas as entregas não entregues visíveis na lista.
+document.getElementById('selecionar-todas').addEventListener('change', (evento) => {
+  if (evento.target.checked) {
+    idsSelecionaveis().forEach((id) => selecionadas.add(id));
+  } else {
+    selecionadas.clear();
+  }
+
+  document.querySelectorAll('#lista-entregas .selecao').forEach((caixa) => {
+    caixa.checked = selecionadas.has(Number(caixa.dataset.id));
+  });
+  atualizarBotaoLote();
 });
 
 document.getElementById('marcar-selecionadas').addEventListener('click', () => {
