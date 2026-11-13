@@ -9,4 +9,8 @@ return [
     'db_name' => 'painel_entregas',
     'db_user' => 'root',
     'db_pass' => '',
+
+    // Usuário fictício usado no histórico enquanto o painel não tem login.
+    // Quando houver login, o nome passa a vir da sessão (ver usuarioAtual() em helpers.php).
+    'usuario_demonstracao' => 'Usuário Demonstração',
 ];

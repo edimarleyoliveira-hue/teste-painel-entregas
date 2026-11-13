@@ -25,39 +25,39 @@ class EmpresaRepository
         $condicoes = [];
         $parametros = [];
 
-        if (!empty($filtros['nome'])) {
+        if (($filtros['nome'] ?? '') !== '') {
             $condicoes[] = '(razao_social LIKE ? OR nome_fantasia LIKE ?)';
             $termo = '%' . escaparLike($filtros['nome']) . '%';
             array_push($parametros, $termo, $termo);
         }
 
-        if (!empty($filtros['documento'])) {
+        if (($filtros['documento'] ?? '') !== '') {
             // Compara sem pontuação, então "12.345" e "12345" encontram o mesmo CNPJ.
             $condicoes[] = "REPLACE(REPLACE(REPLACE(documento, '.', ''), '/', ''), '-', '') LIKE ?";
             $parametros[] = '%' . $filtros['documento'] . '%';
         }
 
-        if (!empty($filtros['codigo'])) {
+        if (($filtros['codigo'] ?? '') !== '') {
             $condicoes[] = 'codigo LIKE ?';
             $parametros[] = '%' . escaparLike($filtros['codigo']) . '%';
         }
 
-        if (!empty($filtros['cidade'])) {
+        if (($filtros['cidade'] ?? '') !== '') {
             $condicoes[] = 'cidade LIKE ?';
             $parametros[] = '%' . escaparLike($filtros['cidade']) . '%';
         }
 
-        if (!empty($filtros['uf'])) {
+        if (($filtros['uf'] ?? '') !== '') {
             $condicoes[] = 'uf = ?';
             $parametros[] = $filtros['uf'];
         }
 
-        if (!empty($filtros['de'])) {
+        if (($filtros['de'] ?? '') !== '') {
             $condicoes[] = 'criado_em >= ?';
             $parametros[] = $filtros['de'] . ' 00:00:00';
         }
 
-        if (!empty($filtros['ate'])) {
+        if (($filtros['ate'] ?? '') !== '') {
             $condicoes[] = 'criado_em <= ?';
             $parametros[] = $filtros['ate'] . ' 23:59:59';
         }

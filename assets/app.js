@@ -173,10 +173,68 @@ function renderizarTabela() {
       <td>${formatarData(entrega.vencimento)}</td>
       <td>${formatarData(entrega.data_entrega)}</td>
       <td><span class="status status--${entrega.status}">${rotulosStatus[entrega.status]}</span></td>
-      <td>${acao}</td>
+      <td>
+        <div class="tabela__acoes">
+          ${acao}
+          <button type="button" class="botao botao--secundario" data-acao="detalhes" data-id="${id}">Detalhes</button>
+        </div>
+      </td>
     </tr>
   `;
   }).join('');
+}
+
+// ---------- Histórico da entrega (botão "Detalhes") ----------
+
+// "AAAA-MM-DD HH:MM:SS" -> "DD/MM/AAAA às HH:MM", sem converter fuso.
+function formatarDataHora(valor) {
+  const [data, hora] = String(valor).split(' ');
+  return `${formatarData(data)} às ${(hora || '').slice(0, 5)}`;
+}
+
+function descreverAcao(acao) {
+  return acao.acao === 'entregue'
+    ? `<span class="status status--entregue">Marcou como entregue</span> em ${formatarData(acao.data_entrega)}`
+    : '<span class="status status--pendente">Voltou para pendente</span>';
+}
+
+// Id da entrega cujo histórico está aberto: se a resposta de outra chegar atrasada, é ignorada.
+let historicoAberto = null;
+
+async function abrirHistorico(id) {
+  historicoAberto = id;
+  const entrega = entregas.find((e) => Number(e.id) === id);
+  document.getElementById('titulo-dialogo-historico').textContent = entrega
+    ? `Histórico — ${entrega.obrigacao} · ${entrega.razao_social} · ${formatarCompetencia(entrega.competencia)}`
+    : 'Histórico da entrega';
+
+  const corpo = document.getElementById('lista-historico');
+  corpo.innerHTML = '<tr><td colspan="3" class="tabela__vazio">Carregando…</td></tr>';
+  document.getElementById('dialogo-historico').showModal();
+
+  const { ok, dados } = await requisicaoJson(`${API}/historico.php?entrega_id=${Number(id)}`);
+
+  if (historicoAberto !== id) {
+    return;
+  }
+
+  if (!ok) {
+    corpo.innerHTML = '<tr><td colspan="3" class="tabela__vazio">Não foi possível carregar o histórico.</td></tr>';
+    return;
+  }
+
+  if (dados.length === 0) {
+    corpo.innerHTML = '<tr><td colspan="3" class="tabela__vazio">Nenhuma ação registrada para esta entrega ainda.</td></tr>';
+    return;
+  }
+
+  corpo.innerHTML = dados.map((acao) => `
+    <tr>
+      <td>${formatarDataHora(acao.realizado_em)}</td>
+      <td>${escaparHtml(acao.usuario)}</td>
+      <td>${descreverAcao(acao)}</td>
+    </tr>
+  `).join('');
 }
 
 // Envia os ids para a API. Serve para uma linha (lista com 1 id) e para várias.
@@ -285,6 +343,12 @@ async function desfazerEntrega(id) {
 }
 
 document.getElementById('lista-entregas').addEventListener('click', async (evento) => {
+  const botaoDetalhes = evento.target.closest('button[data-acao="detalhes"]');
+  if (botaoDetalhes) {
+    abrirHistorico(Number(botaoDetalhes.dataset.id));
+    return;
+  }
+
   const botaoDesfazer = evento.target.closest('button[data-acao="desfazer"]');
   if (botaoDesfazer) {
     if (!window.confirm('Desfazer esta entrega? Ela voltará a ficar sem data de entrega.')) {

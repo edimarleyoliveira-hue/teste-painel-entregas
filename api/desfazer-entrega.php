@@ -21,7 +21,7 @@ try {
 
     $repositorio = new EntregaRepository(Database::conexao());
 
-    if (!$repositorio->desfazerEntrega($id)) {
+    if (!$repositorio->desfazerEntrega($id, usuarioAtual())) {
         responderJson(['erro' => 'Esta entrega não existe ou não está marcada como entregue.'], 409);
     }
 

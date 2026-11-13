@@ -33,22 +33,22 @@ class EntregaRepository
         $parametros = [];
 
         // Busca livre: razão social, nome fantasia ou nome da obrigação.
-        if (!empty($filtros['empresa'])) {
+        if (($filtros['empresa'] ?? '') !== '') {
             $condicoes[] = '(emp.razao_social LIKE ? OR emp.nome_fantasia LIKE ? OR o.nome LIKE ?)';
             $termo = '%' . escaparLike($filtros['empresa']) . '%';
             array_push($parametros, $termo, $termo, $termo);
         }
 
-        if (!empty($filtros['departamento'])) {
+        if (($filtros['departamento'] ?? '') !== '') {
             $condicoes[] = 'o.departamento = ?';
             $parametros[] = $filtros['departamento'];
         }
 
-        if (!empty($filtros['status']) && isset(self::CONDICOES_STATUS[$filtros['status']])) {
+        if (($filtros['status'] ?? '') !== '' && isset(self::CONDICOES_STATUS[$filtros['status']])) {
             $condicoes[] = '(' . self::CONDICOES_STATUS[$filtros['status']] . ')';
         }
 
-        if (!empty($filtros['competencia'])) {
+        if (($filtros['competencia'] ?? '') !== '') {
             $condicoes[] = 'e.competencia = ?';
             $parametros[] = $filtros['competencia'];
         }
@@ -128,44 +128,90 @@ class EntregaRepository
 
     /**
      * Marca as entregas informadas como entregues, com a data escolhida
-     * ou, se não vier data ($data = null), com a data de hoje.
-     * O "AND data_entrega IS NULL" garante que uma entrega já entregue nunca
+     * ou, se não vier data ($data = null), com a data de hoje, e registra no histórico.
+     * Só entregas ainda não entregues são atingidas: uma entrega já entregue nunca
      * tem a data alterada, nem se alguém chamar a API diretamente.
      * Devolve quantas entregas foram de fato marcadas.
      */
-    public function marcarComoEntregues(array $ids, ?string $data = null): int
+    public function marcarComoEntregues(array $ids, ?string $data, string $usuario): int
     {
         if ($ids === []) {
             return 0;
         }
 
         $marcadores = implode(', ', array_fill(0, count($ids), '?'));
+        $dataEntrega = $data ?? $this->hoje();
 
-        $sql = "UPDATE entregas
-                   SET data_entrega = COALESCE(?, CURDATE())
-                 WHERE id IN ({$marcadores})
-                   AND data_entrega IS NULL";
+        // Atualização + histórico: ou grava os dois, ou nenhum.
+        $this->pdo->beginTransaction();
+        try {
+            // FOR UPDATE trava as linhas: dois cliques ao mesmo tempo não registram a mesma entrega duas vezes.
+            $consulta = $this->pdo->prepare(
+                "SELECT id FROM entregas WHERE id IN ({$marcadores}) AND data_entrega IS NULL FOR UPDATE"
+            );
+            $consulta->execute(array_values($ids));
+            $aMarcar = array_map('intval', $consulta->fetchAll(PDO::FETCH_COLUMN));
 
-        $consulta = $this->pdo->prepare($sql);
-        $consulta->execute([$data, ...array_values($ids)]);
+            if ($aMarcar !== []) {
+                $marcadoresMarcar = implode(', ', array_fill(0, count($aMarcar), '?'));
+                $this->pdo->prepare(
+                    "UPDATE entregas SET data_entrega = ? WHERE id IN ({$marcadoresMarcar}) AND data_entrega IS NULL"
+                )->execute([$dataEntrega, ...$aMarcar]);
 
-        return $consulta->rowCount();
+                $this->registrarHistorico($aMarcar, 'entregue', $dataEntrega, $usuario);
+            }
+
+            $this->pdo->commit();
+        } catch (Throwable $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
+
+        return count($aMarcar);
     }
 
     /**
-     * Desfaz uma entrega marcada por engano: a data de entrega volta a ficar vazia.
+     * Desfaz uma entrega marcada por engano: a data de entrega volta a ficar vazia
+     * (volta para pendente/atrasada) e a ação fica registrada no histórico.
      * Só atinge entregas que estão entregues. Devolve true se desfez.
      */
-    public function desfazerEntrega(int $id): bool
+    public function desfazerEntrega(int $id, string $usuario): bool
     {
-        $sql = "UPDATE entregas
-                   SET data_entrega = NULL
-                 WHERE id = ?
-                   AND data_entrega IS NOT NULL";
+        $this->pdo->beginTransaction();
+        try {
+            $consulta = $this->pdo->prepare(
+                'SELECT id FROM entregas WHERE id = ? AND data_entrega IS NOT NULL FOR UPDATE'
+            );
+            $consulta->execute([$id]);
 
-        $consulta = $this->pdo->prepare($sql);
-        $consulta->execute([$id]);
+            if (!$consulta->fetchColumn()) {
+                $this->pdo->commit();
+                return false;
+            }
 
-        return $consulta->rowCount() === 1;
+            $this->pdo->prepare('UPDATE entregas SET data_entrega = NULL WHERE id = ?')->execute([$id]);
+            $this->registrarHistorico([$id], 'pendente', null, $usuario);
+
+            $this->pdo->commit();
+        } catch (Throwable $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
+
+        return true;
+    }
+
+    // Copia empresa, obrigação, competência e vencimento de cada entrega para o histórico.
+    private function registrarHistorico(array $ids, string $acao, ?string $dataEntrega, string $usuario): void
+    {
+        $marcadores = implode(', ', array_fill(0, count($ids), '?'));
+
+        $sql = "INSERT INTO historico_entregas
+                       (entrega_id, empresa_id, obrigacao_id, competencia, vencimento, acao, data_entrega, usuario)
+                SELECT id, empresa_id, obrigacao_id, competencia, vencimento, ?, ?, ?
+                  FROM entregas
+                 WHERE id IN ({$marcadores})";
+
+        $this->pdo->prepare($sql)->execute([$acao, $dataEntrega, $usuario, ...$ids]);
     }
 }

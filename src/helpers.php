@@ -9,6 +9,7 @@ require_once __DIR__ . '/EmpresaValidador.php';
 require_once __DIR__ . '/Calendario.php';
 require_once __DIR__ . '/Recorrencia.php';
 require_once __DIR__ . '/GeradorEntregas.php';
+require_once __DIR__ . '/HistoricoRepository.php';
 
 function responderJson($dados, int $status = 200): void
 {
@@ -26,6 +27,14 @@ function responderErro(Throwable $e): void
     responderJson([
         'erro' => 'Não foi possível concluir a operação.',
     ], 500);
+}
+
+// Quem está fazendo a ação, para o histórico. Por enquanto, um usuário fictício (config.php).
+function usuarioAtual(): string
+{
+    $config = require __DIR__ . '/config.php';
+
+    return $config['usuario_demonstracao'];
 }
 
 // No LIKE, % e _ são curingas. Escapamos para buscar o texto literal digitado.

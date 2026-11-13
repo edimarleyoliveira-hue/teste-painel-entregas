@@ -80,6 +80,25 @@ CREATE TABLE entregas (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- Histórico das ações nas entregas: quem marcou como entregue ou voltou para pendente, e quando.
+-- Competência e vencimento são copiados para o histórico não se perder se a entrega for regerada.
+CREATE TABLE historico_entregas (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  entrega_id INT NOT NULL,
+  empresa_id INT NOT NULL,
+  obrigacao_id INT NOT NULL,
+  competencia CHAR(7) NOT NULL,
+  vencimento DATE NOT NULL,
+  acao ENUM('entregue', 'pendente') NOT NULL COMMENT 'entregue = marcou como entregue; pendente = desfez a entrega',
+  data_entrega DATE NULL COMMENT 'Data de entrega registrada (só quando acao = entregue)',
+  usuario VARCHAR(100) NOT NULL,
+  realizado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_historico_obrigacao (obrigacao_id, realizado_em),
+  CONSTRAINT fk_historico_empresa FOREIGN KEY (empresa_id) REFERENCES empresas (id),
+  CONSTRAINT fk_historico_obrigacao FOREIGN KEY (obrigacao_id) REFERENCES obrigacoes (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 -- Datas de cadastro relativas ao dia da importação, para o filtro por período ter o que mostrar.
 INSERT INTO empresas (codigo, tipo_documento, documento, razao_social, nome_fantasia, regime, cep, logradouro, numero, complemento, bairro, cidade, uf, contato_nome, contato_telefone, contato_email, criado_em) VALUES
   ('MERC01', 'CNPJ', '12.345.678/0001-95', 'Mercado Bom Preço Ltda', 'Bom Preço', 'Simples Nacional', '30130-010', 'Avenida Afonso Pena', '1500', NULL, 'Centro', 'Belo Horizonte', 'MG', 'Marcos Lima', '(31) 3222-1000', 'financeiro@bompreco.example', DATE_SUB(NOW(), INTERVAL 400 DAY)),

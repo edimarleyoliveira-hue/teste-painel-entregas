@@ -55,7 +55,7 @@ try {
         responderJson(['erro' => 'A data de entrega não pode ser uma data futura.'], 400);
     }
 
-    $marcadas = $repositorio->marcarComoEntregues(array_values($idsValidos), $dataEntrega);
+    $marcadas = $repositorio->marcarComoEntregues(array_values($idsValidos), $dataEntrega, usuarioAtual());
 
     $mensagem = $marcadas === 1
         ? '1 entrega marcada como entregue.'
