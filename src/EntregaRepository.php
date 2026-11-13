@@ -148,6 +148,23 @@ class EntregaRepository
         return $consulta->rowCount();
     }
 
+    /**
+     * Desfaz uma entrega marcada por engano: a data de entrega volta a ficar vazia.
+     * Só atinge entregas que estão entregues. Devolve true se desfez.
+     */
+    public function desfazerEntrega(int $id): bool
+    {
+        $sql = "UPDATE entregas
+                   SET data_entrega = NULL
+                 WHERE id = ?
+                   AND data_entrega IS NOT NULL";
+
+        $consulta = $this->pdo->prepare($sql);
+        $consulta->execute([$id]);
+
+        return $consulta->rowCount() === 1;
+    }
+
     // No LIKE, % e _ são curingas. Escapamos para buscar o texto literal digitado.
     private function escaparLike(string $texto): string
     {

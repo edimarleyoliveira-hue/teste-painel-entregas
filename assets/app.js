@@ -158,7 +158,7 @@ function renderizarTabela() {
       : '';
     const acao = naoEntregue
       ? `<button type="button" class="botao botao--secundario" data-acao="marcar" data-id="${id}">Marcar como entregue</button>`
-      : '';
+      : `<button type="button" class="botao botao--secundario" data-acao="desfazer" data-id="${id}">Desfazer</button>`;
 
     return `
     <tr>
@@ -260,7 +260,43 @@ document.getElementById('lista-entregas').addEventListener('change', (evento) =>
   atualizarBotaoLote();
 });
 
+// Bônus: desfaz uma entrega marcada por engano (a data de entrega volta a ficar vazia).
+async function desfazerEntrega(id) {
+  try {
+    const resposta = await fetch(`${API}/desfazer-entrega.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    const resultado = await resposta.json();
+
+    if (!resposta.ok) {
+      mostrarAviso(resultado.erro || 'Não foi possível desfazer a entrega.', 'erro');
+      return false;
+    }
+
+    mostrarAviso(resultado.mensagem);
+    await Promise.all([carregarResumo(), carregarEntregas()]);
+    return true;
+  } catch (erro) {
+    mostrarAviso('Não foi possível conectar à API.', 'erro');
+    return false;
+  }
+}
+
 document.getElementById('lista-entregas').addEventListener('click', async (evento) => {
+  const botaoDesfazer = evento.target.closest('button[data-acao="desfazer"]');
+  if (botaoDesfazer) {
+    if (!window.confirm('Desfazer esta entrega? Ela voltará a ficar sem data de entrega.')) {
+      return;
+    }
+    botaoDesfazer.disabled = true;
+    if (!(await desfazerEntrega(Number(botaoDesfazer.dataset.id)))) {
+      botaoDesfazer.disabled = false;
+    }
+    return;
+  }
+
   const botao = evento.target.closest('button[data-acao="marcar"]');
   if (!botao || enviando) {
     return;
@@ -394,11 +430,11 @@ document.getElementById('limpar-filtros').addEventListener('click', () => {
   carregarEntregas();
 });
 
-carregarResumo();
-carregarEntregas();
-carregarOpcoesCadastro();
 // Campo "Data da entrega": começa em hoje e não deixa escolher data futura.
 document.getElementById('data-entrega').value = dataPadrao;
 atualizarCampoData();
 window.addEventListener('focus', atualizarCampoData);
 
+carregarResumo();
+carregarEntregas();
+carregarOpcoesCadastro();
