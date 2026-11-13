@@ -1,6 +1,13 @@
 const API = 'api';
+const TOTAL_COLUNAS = 9;
 
 let entregas = [];
+
+// Ids das entregas não entregues marcadas na caixa de seleção.
+const selecionadas = new Set();
+
+// true enquanto um pedido de "marcar como entregue" está a caminho da API.
+let enviando = false;
 
 const rotulosStatus = {
   entregue: 'Entregue',
@@ -92,7 +99,22 @@ async function carregarEntregas() {
     mostrarAviso('Não foi possível conectar à API.', 'erro');
   }
 
+  // Mantém selecionadas só as que continuam visíveis e não entregues.
+  const selecionaveis = new Set(entregas.filter((e) => e.status !== 'entregue').map((e) => e.id));
+  selecionadas.forEach((id) => {
+    if (!selecionaveis.has(id)) {
+      selecionadas.delete(id);
+    }
+  });
+
   renderizarTabela();
+  atualizarBotaoLote();
+}
+
+function atualizarBotaoLote() {
+  const botao = document.getElementById('marcar-selecionadas');
+  botao.textContent = `Marcar selecionadas como entregues (${selecionadas.size})`;
+  botao.disabled = enviando || selecionadas.size === 0;
 }
 
 function renderizarTabela() {
@@ -102,12 +124,24 @@ function renderizarTabela() {
     const mensagem = filtrosAtuais().toString()
       ? 'Nenhuma entrega encontrada para os filtros selecionados.'
       : 'Nenhuma entrega encontrada.';
-    corpo.innerHTML = `<tr><td colspan="7" class="tabela__vazio">${mensagem}</td></tr>`;
+    corpo.innerHTML = `<tr><td colspan="${TOTAL_COLUNAS}" class="tabela__vazio">${mensagem}</td></tr>`;
     return;
   }
 
-  corpo.innerHTML = entregas.map((entrega) => `
+  // Só linhas não entregues ganham caixa de seleção e botão. O id é numérico (Number) e vai em atributo.
+  corpo.innerHTML = entregas.map((entrega) => {
+    const id = Number(entrega.id);
+    const naoEntregue = entrega.status !== 'entregue';
+    const selecao = naoEntregue
+      ? `<input type="checkbox" class="selecao" data-id="${id}" aria-label="Selecionar entrega" ${selecionadas.has(id) ? 'checked' : ''}>`
+      : '';
+    const acao = naoEntregue
+      ? `<button type="button" class="botao botao--secundario" data-acao="marcar" data-id="${id}">Marcar como entregue</button>`
+      : '';
+
+    return `
     <tr>
+      <td class="tabela__selecao">${selecao}</td>
       <td>
         <span class="tabela__empresa">${escaparHtml(entrega.razao_social)}</span>
         <span class="tabela__cnpj">${escaparHtml(entrega.cnpj)}</span>
@@ -118,9 +152,80 @@ function renderizarTabela() {
       <td>${formatarData(entrega.vencimento)}</td>
       <td>${formatarData(entrega.data_entrega)}</td>
       <td><span class="status status--${entrega.status}">${rotulosStatus[entrega.status]}</span></td>
+      <td>${acao}</td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 }
+
+// Envia os ids para a API. Serve para uma linha (lista com 1 id) e para várias.
+// Devolve true se deu certo.
+async function marcarComoEntregues(ids) {
+  enviando = true;
+  atualizarBotaoLote();
+
+  try {
+    const resposta = await fetch(`${API}/marcar-entregues.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    });
+    const resultado = await resposta.json();
+
+    if (!resposta.ok) {
+      mostrarAviso(resultado.erro || 'Não foi possível marcar as entregas.', 'erro');
+      return false;
+    }
+
+    // Tira da seleção só o que foi enviado; o resto do que o usuário marcou continua marcado.
+    ids.forEach((id) => selecionadas.delete(id));
+    mostrarAviso(resultado.mensagem, resultado.marcadas > 0 ? 'sucesso' : 'erro');
+    // Recarrega com os filtros que estão nos campos, então eles continuam valendo.
+    await Promise.all([carregarResumo(), carregarEntregas()]);
+    return true;
+  } catch (erro) {
+    mostrarAviso('Não foi possível conectar à API.', 'erro');
+    return false;
+  } finally {
+    enviando = false;
+    atualizarBotaoLote();
+  }
+}
+
+// Um único "ouvinte" na tabela trata as caixas e os botões de todas as linhas.
+document.getElementById('lista-entregas').addEventListener('change', (evento) => {
+  const caixa = evento.target;
+  if (!caixa.classList.contains('selecao')) {
+    return;
+  }
+
+  const id = Number(caixa.dataset.id);
+  if (caixa.checked) {
+    selecionadas.add(id);
+  } else {
+    selecionadas.delete(id);
+  }
+  atualizarBotaoLote();
+});
+
+document.getElementById('lista-entregas').addEventListener('click', async (evento) => {
+  const botao = evento.target.closest('button[data-acao="marcar"]');
+  if (!botao || enviando) {
+    return;
+  }
+
+  botao.disabled = true;
+  const deuCerto = await marcarComoEntregues([Number(botao.dataset.id)]);
+  if (!deuCerto) {
+    botao.disabled = false; // em caso de erro, o usuário pode tentar de novo
+  }
+});
+
+document.getElementById('marcar-selecionadas').addEventListener('click', () => {
+  if (!enviando && selecionadas.size > 0) {
+    marcarComoEntregues([...selecionadas]);
+  }
+});
 
 // Preenche um <select> com opções vindas da API. new Option() trata o texto como texto puro.
 function preencherSelect(select, itens, rotulo) {

@@ -197,6 +197,15 @@ body {
 
 .tabela__empresa { font-weight: 600; color: var(--tinta); }
 .tabela__cnpj { display: block; font-size: 0.8125rem; color: var(--texto-suave); font-weight: 400; }
+.tabela__selecao { width: 2.5rem; }
+.tabela__selecao input { width: 1.1rem; height: 1.1rem; cursor: pointer; }
+
+.acoes-lote {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.75rem;
+}
+
 .tabela__vazio { text-align: center; color: var(--texto-suave); padding: 2rem; }
 
 .status {

@@ -88,10 +88,15 @@
       <button type="button" class="botao botao--secundario" id="limpar-filtros">Limpar filtros</button>
     </form>
 
+    <div class="acoes-lote">
+      <button type="button" class="botao" id="marcar-selecionadas" disabled>Marcar selecionadas como entregues (0)</button>
+    </div>
+
     <div class="tabela-container">
       <table class="tabela">
         <thead>
           <tr>
+            <th class="tabela__selecao"><span class="visualmente-oculto">Selecionar</span></th>
             <th>Empresa</th>
             <th>Obrigação</th>
             <th>Departamento</th>
@@ -99,10 +104,11 @@
             <th>Vencimento</th>
             <th>Entregue em</th>
             <th>Status</th>
+            <th><span class="visualmente-oculto">Ações</span></th>
           </tr>
         </thead>
         <tbody id="lista-entregas">
-          <tr><td colspan="7" class="tabela__vazio">Carregando entregas…</td></tr>
+          <tr><td colspan="9" class="tabela__vazio">Carregando entregas…</td></tr>
         </tbody>
       </table>
     </div>
