@@ -14,118 +14,375 @@
     </div>
   </header>
 
-  <main class="conteudo">
-    <section class="resumo" aria-label="Resumo das entregas">
-      <div class="resumo__item">
-        <span class="resumo__numero" id="resumo-total">–</span>
-        <span class="resumo__rotulo">Total</span>
-      </div>
-      <div class="resumo__item resumo__item--entregue">
-        <span class="resumo__numero" id="resumo-entregues">–</span>
-        <span class="resumo__rotulo">Entregues</span>
-      </div>
-      <div class="resumo__item resumo__item--pendente">
-        <span class="resumo__numero" id="resumo-pendentes">–</span>
-        <span class="resumo__rotulo">Pendentes</span>
-      </div>
-      <div class="resumo__item resumo__item--atrasada">
-        <span class="resumo__numero" id="resumo-atrasadas">–</span>
-        <span class="resumo__rotulo">Atrasadas</span>
-      </div>
-    </section>
+  <div class="layout">
+    <nav class="menu" aria-label="Menu principal">
+      <a class="menu__item" href="#obrigacoes" data-tela="obrigacoes">Obrigações</a>
+      <a class="menu__item" href="#empresas" data-tela="empresas">Empresas</a>
+      <a class="menu__item" href="#entregas" data-tela="entregas">Entregas</a>
+    </nav>
 
-    <section class="cadastro" aria-labelledby="titulo-cadastro">
-      <h2 class="cadastro__titulo" id="titulo-cadastro">Nova entrega</h2>
-      <form class="cadastro__form" id="form-cadastro" novalidate>
+    <main class="conteudo">
+      <!-- ===================== ENTREGAS ===================== -->
+      <section class="tela" id="tela-entregas" aria-labelledby="titulo-entregas">
+        <h2 class="tela__titulo" id="titulo-entregas">Entregas</h2>
+
+        <section class="resumo" aria-label="Resumo das entregas">
+          <div class="resumo__item">
+            <span class="resumo__numero" id="resumo-total">–</span>
+            <span class="resumo__rotulo">Total</span>
+          </div>
+          <div class="resumo__item resumo__item--entregue">
+            <span class="resumo__numero" id="resumo-entregues">–</span>
+            <span class="resumo__rotulo">Entregues</span>
+          </div>
+          <div class="resumo__item resumo__item--pendente">
+            <span class="resumo__numero" id="resumo-pendentes">–</span>
+            <span class="resumo__rotulo">Pendentes</span>
+          </div>
+          <div class="resumo__item resumo__item--atrasada">
+            <span class="resumo__numero" id="resumo-atrasadas">–</span>
+            <span class="resumo__rotulo">Atrasadas</span>
+          </div>
+        </section>
+
+        <section class="cadastro" aria-labelledby="titulo-cadastro">
+          <h3 class="cadastro__titulo" id="titulo-cadastro">Nova entrega</h3>
+          <form class="cadastro__form" id="form-cadastro" novalidate>
+            <label class="campo">
+              Empresa
+              <select name="empresa_id" id="cadastro-empresa" required>
+                <option value="">Selecione…</option>
+              </select>
+            </label>
+            <label class="campo">
+              Obrigação
+              <select name="obrigacao_id" id="cadastro-obrigacao" required>
+                <option value="">Selecione…</option>
+              </select>
+            </label>
+            <label class="campo">
+              Competência
+              <input type="month" name="competencia" id="cadastro-competencia" placeholder="AAAA-MM" required>
+            </label>
+            <label class="campo">
+              Vencimento
+              <input type="date" name="vencimento" id="cadastro-vencimento" required>
+            </label>
+            <button type="submit" class="botao" id="cadastro-salvar">Cadastrar</button>
+          </form>
+        </section>
+
+        <form class="filtros" id="form-filtros" aria-label="Filtros da lista">
+          <label class="campo campo--busca">
+            Empresa ou obrigação
+            <input type="search" name="empresa" id="filtro-empresa" maxlength="150" placeholder="Razão social, nome fantasia ou obrigação">
+          </label>
+          <label class="campo">
+            Departamento
+            <select name="departamento" id="filtro-departamento">
+              <option value="">Todos</option>
+              <option value="Fiscal">Fiscal</option>
+              <option value="Pessoal">Pessoal</option>
+              <option value="Contábil">Contábil</option>
+            </select>
+          </label>
+          <label class="campo">
+            Status
+            <select name="status" id="filtro-status">
+              <option value="">Todos</option>
+              <option value="pendente">Pendente</option>
+              <option value="atrasada">Atrasada</option>
+              <option value="entregue">Entregue</option>
+            </select>
+          </label>
+          <label class="campo">
+            Competência
+            <input type="month" name="competencia" id="filtro-competencia" placeholder="AAAA-MM">
+          </label>
+          <button type="submit" class="botao">Filtrar</button>
+          <button type="button" class="botao botao--secundario" id="limpar-filtros">Limpar filtros</button>
+        </form>
+
+        <div class="acoes-lote">
+          <label class="campo">
+            Data da entrega (vale para as marcações)
+            <input type="date" id="data-entrega" required>
+          </label>
+          <button type="button" class="botao" id="marcar-selecionadas" disabled>Marcar selecionadas como entregues (0)</button>
+        </div>
+
+        <div class="tabela-container">
+          <table class="tabela">
+            <thead>
+              <tr>
+                <th class="tabela__selecao">
+                  <input type="checkbox" id="selecionar-todas" aria-label="Selecionar todas as entregas não entregues da lista" title="Selecionar todas" disabled>
+                </th>
+                <th>Empresa</th>
+                <th>Obrigação</th>
+                <th>Departamento</th>
+                <th>Competência</th>
+                <th>Vencimento</th>
+                <th>Entregue em</th>
+                <th>Status</th>
+                <th><span class="visualmente-oculto">Ações</span></th>
+              </tr>
+            </thead>
+            <tbody id="lista-entregas">
+              <tr><td colspan="9" class="tabela__vazio">Carregando entregas…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===================== EMPRESAS ===================== -->
+      <section class="tela" id="tela-empresas" aria-labelledby="titulo-empresas" hidden>
+        <div class="tela__cabecalho">
+          <h2 class="tela__titulo" id="titulo-empresas">Empresas</h2>
+          <button type="button" class="botao" id="nova-empresa">Nova empresa</button>
+        </div>
+
+        <form class="filtros" id="form-filtros-empresas" aria-label="Filtros de empresas">
+          <label class="campo campo--busca">
+            Nome
+            <input type="search" name="nome" maxlength="150" placeholder="Razão social ou nome fantasia">
+          </label>
+          <label class="campo">
+            CNPJ/CPF
+            <input type="search" name="documento" maxlength="18" placeholder="Número completo ou parte">
+          </label>
+          <label class="campo">
+            ID da empresa
+            <input type="search" name="codigo" maxlength="20" class="maiusculo">
+          </label>
+          <label class="campo">
+            Cidade
+            <input type="search" name="cidade" maxlength="80">
+          </label>
+          <label class="campo">
+            Estado
+            <select name="uf" class="select-uf">
+              <option value="">Todos</option>
+            </select>
+          </label>
+          <label class="campo">
+            Cadastradas de
+            <input type="date" name="de">
+          </label>
+          <label class="campo">
+            até
+            <input type="date" name="ate">
+          </label>
+          <button type="submit" class="botao">Filtrar</button>
+          <button type="button" class="botao botao--secundario" id="limpar-filtros-empresas">Limpar filtros</button>
+        </form>
+
+        <div class="tabela-container">
+          <table class="tabela">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Empresa</th>
+                <th>CNPJ/CPF</th>
+                <th>Cidade/UF</th>
+                <th>Cadastro</th>
+                <th>Obrigações</th>
+                <th><span class="visualmente-oculto">Ações</span></th>
+              </tr>
+            </thead>
+            <tbody id="lista-empresas">
+              <tr><td colspan="7" class="tabela__vazio">Carregando empresas…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===================== OBRIGAÇÕES ===================== -->
+      <section class="tela" id="tela-obrigacoes" aria-labelledby="titulo-obrigacoes" hidden>
+        <div class="tela__cabecalho">
+          <h2 class="tela__titulo" id="titulo-obrigacoes">Obrigações</h2>
+          <button type="button" class="botao" id="nova-obrigacao">Nova obrigação</button>
+        </div>
+        <p class="tela__ajuda">A configuração cadastrada aqui é o <strong>padrão</strong>. Ao incluir a obrigação numa empresa, ela é copiada e pode ser ajustada só para aquela empresa.</p>
+
+        <div class="tabela-container">
+          <table class="tabela">
+            <thead>
+              <tr>
+                <th>Obrigação</th>
+                <th>Departamento</th>
+                <th>Recorrência / vencimento</th>
+                <th>Fim de semana ou feriado</th>
+                <th>Empresas</th>
+                <th><span class="visualmente-oculto">Ações</span></th>
+              </tr>
+            </thead>
+            <tbody id="lista-obrigacoes">
+              <tr><td colspan="6" class="tabela__vazio">Carregando obrigações…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ===================== FORMULÁRIO DE EMPRESA ===================== -->
+  <dialog class="dialogo" id="dialogo-empresa" aria-labelledby="titulo-dialogo-empresa">
+    <form id="form-empresa" novalidate>
+      <h2 class="dialogo__titulo" id="titulo-dialogo-empresa">Nova empresa</h2>
+      <p class="dialogo__erro" id="erro-empresa" role="alert" hidden></p>
+
+      <fieldset class="grupo">
+        <legend>Identificação</legend>
         <label class="campo">
-          Empresa
-          <select name="empresa_id" id="cadastro-empresa" required>
+          ID da empresa
+          <input type="text" name="codigo" maxlength="20" class="maiusculo" placeholder="Automático se vazio" pattern="[A-Z0-9]*">
+        </label>
+        <div class="campo">
+          Documento
+          <div class="opcoes">
+            <label><input type="radio" name="tipo_documento" value="CNPJ" checked> CNPJ</label>
+            <label><input type="radio" name="tipo_documento" value="CPF"> CPF</label>
+          </div>
+        </div>
+        <label class="campo">
+          <span id="rotulo-documento">CNPJ</span>
+          <input type="text" name="documento" required placeholder="00.000.000/0000-00" autocomplete="off">
+        </label>
+        <label class="campo campo--largo">
+          Razão social
+          <input type="text" name="razao_social" maxlength="150" required>
+        </label>
+        <label class="campo campo--largo">
+          Nome fantasia
+          <input type="text" name="nome_fantasia" maxlength="150">
+        </label>
+        <label class="campo">
+          Regime tributário
+          <select name="regime" required>
             <option value="">Selecione…</option>
+            <option>Simples Nacional</option>
+            <option>Lucro Presumido</option>
+            <option>Lucro Real</option>
           </select>
         </label>
+      </fieldset>
+
+      <fieldset class="grupo">
+        <legend>Endereço</legend>
         <label class="campo">
-          Obrigação
-          <select name="obrigacao_id" id="cadastro-obrigacao" required>
-            <option value="">Selecione…</option>
+          CEP
+          <input type="text" name="cep" inputmode="numeric" required placeholder="00000-000">
+        </label>
+        <label class="campo campo--largo">
+          Rua
+          <input type="text" name="logradouro" maxlength="150" required>
+        </label>
+        <label class="campo campo--curto">
+          Número
+          <input type="text" name="numero" maxlength="20" required>
+        </label>
+        <label class="campo">
+          Complemento
+          <input type="text" name="complemento" maxlength="80">
+        </label>
+        <label class="campo">
+          Bairro
+          <input type="text" name="bairro" maxlength="80" required>
+        </label>
+        <label class="campo">
+          Cidade
+          <input type="text" name="cidade" maxlength="80" required>
+        </label>
+        <label class="campo campo--curto">
+          Estado
+          <select name="uf" class="select-uf" required>
+            <option value="">UF</option>
           </select>
         </label>
-        <label class="campo">
-          Competência
-          <input type="month" name="competencia" id="cadastro-competencia" placeholder="AAAA-MM" required>
-        </label>
-        <label class="campo">
-          Vencimento
-          <input type="date" name="vencimento" id="cadastro-vencimento" required>
-        </label>
-        <button type="submit" class="botao" id="cadastro-salvar">Cadastrar</button>
-      </form>
-    </section>
+      </fieldset>
 
-    <form class="filtros" id="form-filtros" aria-label="Filtros da lista">
-      <label class="campo campo--busca">
-        Empresa
-        <input type="search" name="empresa" id="filtro-empresa" maxlength="150" placeholder="Buscar pela razão social">
-      </label>
-      <label class="campo">
-        Departamento
-        <select name="departamento" id="filtro-departamento">
-          <option value="">Todos</option>
-          <option value="Fiscal">Fiscal</option>
-          <option value="Pessoal">Pessoal</option>
-          <option value="Contábil">Contábil</option>
-        </select>
-      </label>
-      <label class="campo">
-        Status
-        <select name="status" id="filtro-status">
-          <option value="">Todos</option>
-          <option value="pendente">Pendente</option>
-          <option value="atrasada">Atrasada</option>
-          <option value="entregue">Entregue</option>
-        </select>
-      </label>
-      <label class="campo">
-        Competência
-        <input type="month" name="competencia" id="filtro-competencia" placeholder="AAAA-MM">
-      </label>
-      <button type="submit" class="botao">Filtrar</button>
-      <button type="button" class="botao botao--secundario" id="limpar-filtros">Limpar filtros</button>
+      <fieldset class="grupo">
+        <legend>Contato</legend>
+        <label class="campo">
+          Nome
+          <input type="text" name="contato_nome" maxlength="100">
+        </label>
+        <label class="campo">
+          Telefone
+          <input type="tel" name="contato_telefone" placeholder="(00) 00000-0000">
+        </label>
+        <label class="campo campo--largo">
+          E-mail
+          <input type="email" name="contato_email" maxlength="150">
+        </label>
+      </fieldset>
+
+      <fieldset class="grupo grupo--coluna">
+        <legend>Obrigações da empresa</legend>
+        <p class="tela__ajuda">Ao incluir, a obrigação vem com a configuração padrão. Ajuste aqui se esta empresa tiver regra diferente. Ao salvar, as entregas dos próximos 12 meses são geradas.</p>
+        <div class="adicionar-obrigacao">
+          <label class="campo">
+            Incluir obrigação
+            <select id="empresa-obrigacao-nova">
+              <option value="">Selecione…</option>
+            </select>
+          </label>
+          <button type="button" class="botao botao--secundario" id="empresa-incluir-obrigacao">Incluir</button>
+        </div>
+        <ul class="vinculos" id="empresa-vinculos"></ul>
+      </fieldset>
+
+      <div class="dialogo__acoes">
+        <button type="button" class="botao botao--secundario" data-fechar>Cancelar</button>
+        <button type="submit" class="botao" id="salvar-empresa">Salvar</button>
+      </div>
     </form>
+  </dialog>
 
-    <div class="acoes-lote">
-      <label class="campo">
-        Data da entrega (vale para as marcações)
-        <input type="date" id="data-entrega" required>
-      </label>
-      <button type="button" class="botao" id="marcar-selecionadas" disabled>Marcar selecionadas como entregues (0)</button>
-    </div>
+  <!-- ===================== FORMULÁRIO DE OBRIGAÇÃO ===================== -->
+  <dialog class="dialogo dialogo--estreito" id="dialogo-obrigacao" aria-labelledby="titulo-dialogo-obrigacao">
+    <form id="form-obrigacao" novalidate>
+      <h2 class="dialogo__titulo" id="titulo-dialogo-obrigacao">Nova obrigação</h2>
+      <p class="dialogo__erro" id="erro-obrigacao" role="alert" hidden></p>
+      <p class="tela__ajuda" id="ajuda-edicao-obrigacao" hidden>Alterar aqui muda só o <strong>padrão</strong> para as próximas empresas. Empresas que já têm esta obrigação mantêm a regra própria.</p>
 
-    <div class="tabela-container">
-      <table class="tabela">
-        <thead>
-          <tr>
-            <th class="tabela__selecao">
-              <input type="checkbox" id="selecionar-todas" aria-label="Selecionar todas as entregas não entregues da lista" title="Selecionar todas" disabled>
-            </th>
-            <th>Empresa</th>
-            <th>Obrigação</th>
-            <th>Departamento</th>
-            <th>Competência</th>
-            <th>Vencimento</th>
-            <th>Entregue em</th>
-            <th>Status</th>
-            <th><span class="visualmente-oculto">Ações</span></th>
-          </tr>
-        </thead>
-        <tbody id="lista-entregas">
-          <tr><td colspan="9" class="tabela__vazio">Carregando entregas…</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </main>
+      <fieldset class="grupo">
+        <legend>Obrigação</legend>
+        <label class="campo campo--largo">
+          Nome
+          <input type="text" name="nome" maxlength="80" required>
+        </label>
+        <label class="campo">
+          Departamento
+          <select name="departamento" required>
+            <option value="">Selecione…</option>
+            <option>Fiscal</option>
+            <option>Pessoal</option>
+            <option>Contábil</option>
+          </select>
+        </label>
+      </fieldset>
+
+      <fieldset class="grupo">
+        <legend>Recorrência e vencimento padrão</legend>
+        <div id="obrigacao-recorrencia" class="recorrencia-container"></div>
+      </fieldset>
+
+      <div class="dialogo__acoes">
+        <button type="button" class="botao botao--secundario" data-fechar>Cancelar</button>
+        <button type="submit" class="botao" id="salvar-obrigacao">Salvar</button>
+      </div>
+    </form>
+  </dialog>
 
   <div class="aviso" id="aviso" role="status" aria-live="polite" hidden></div>
 
   <script src="assets/app.js"></script>
+  <script src="assets/mascaras.js"></script>
+  <script src="assets/recorrencia.js"></script>
+  <script src="assets/empresas.js"></script>
+  <script src="assets/obrigacoes.js"></script>
+  <script src="assets/navegacao.js"></script>
 </body>
 </html>

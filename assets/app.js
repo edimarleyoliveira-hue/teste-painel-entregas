@@ -329,11 +329,36 @@ document.getElementById('marcar-selecionadas').addEventListener('click', () => {
   }
 });
 
+// Envia/recebe JSON. Devolve { ok, dados }; em falha de rede, ok = false e dados.erro explica.
+async function requisicaoJson(url, metodo = 'GET', corpo = undefined) {
+  const opcoes = { method: metodo };
+  if (corpo !== undefined) {
+    opcoes.headers = { 'Content-Type': 'application/json' };
+    opcoes.body = JSON.stringify(corpo);
+  }
+
+  try {
+    const resposta = await fetch(url, opcoes);
+    const dados = await resposta.json();
+    return { ok: resposta.ok, dados };
+  } catch (erro) {
+    return { ok: false, dados: { erro: 'Não foi possível conectar à API.' } };
+  }
+}
+
 // Preenche um <select> com opções vindas da API. new Option() trata o texto como texto puro.
+// Mantém só a primeira opção ("Selecione…") e troca as demais, para poder recarregar.
 function preencherSelect(select, itens, rotulo) {
+  const escolhido = select.value;
+  select.length = 1;
   itens.forEach((item) => {
     select.appendChild(new Option(rotulo(item), item.id));
   });
+  // Mantém a escolha que já estava feita, se ela ainda existir.
+  select.value = escolhido;
+  if (select.value !== escolhido) {
+    select.value = '';
+  }
 }
 
 async function carregarOpcoesCadastro() {

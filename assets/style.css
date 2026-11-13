@@ -50,6 +50,228 @@ body {
 
 .conteudo { padding: 1.5rem 1rem 3rem; }
 
+/* ---------- Layout com menu lateral ---------- */
+
+.topo__conteudo { max-width: none; }
+
+.layout {
+  display: grid;
+  grid-template-columns: 13rem minmax(0, 1fr);
+  min-height: calc(100vh - 6rem);
+}
+
+.layout .conteudo {
+  max-width: 80rem;
+  width: 100%;
+  margin: 0;
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1.5rem 0.75rem;
+  background: var(--papel);
+  border-right: 1px solid var(--linha);
+}
+
+.menu__item {
+  padding: 0.625rem 0.875rem;
+  border-radius: 4px;
+  color: var(--texto);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.menu__item:hover { background: #e6f1f5; }
+
+.menu__item[aria-current="page"] {
+  background: var(--acao);
+  color: #fff;
+}
+
+.tela__cabecalho {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.tela__titulo {
+  margin: 0 0 1rem;
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+.tela__cabecalho .tela__titulo { margin: 0; }
+
+.tela__ajuda {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  color: var(--texto-suave);
+}
+
+.etiqueta {
+  display: inline-block;
+  margin-left: 0.25rem;
+  padding: 0 0.375rem;
+  border: 1px solid var(--linha);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--texto-suave);
+}
+
+/* ---------- Formulários em janela (dialog) ---------- */
+
+.dialogo {
+  width: min(56rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  padding: 1.5rem;
+  border: 1px solid var(--linha);
+  border-radius: 8px;
+  color: var(--texto);
+  background: var(--fundo);
+}
+
+.dialogo--estreito { width: min(40rem, calc(100vw - 2rem)); }
+
+.dialogo::backdrop { background: rgba(27, 43, 58, 0.55); }
+
+.dialogo__titulo {
+  margin: 0 0 1rem;
+  font-size: 1.25rem;
+  color: var(--tinta);
+}
+
+.dialogo__erro {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  color: var(--atrasada);
+  background: var(--atrasada-fundo);
+}
+
+.dialogo__acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.dialogo__acoes .botao--secundario { padding: 0.5rem 1rem; font-size: 1rem; }
+
+/* Campos nunca passam da largura do formulário (importante no celular).
+   min-width: 0 deixa os blocos encolherem abaixo do tamanho da opção mais longa de um select. */
+.campo { max-width: 100%; }
+.campo input,
+.campo select { max-width: 100%; }
+.grupo > *,
+.vinculos,
+.vinculo,
+.vinculo > * { min-width: 0; }
+
+.grupo {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin: 0 0 1rem;
+  padding: 1rem;
+  border: 1px solid var(--linha);
+  border-radius: 6px;
+  background: var(--papel);
+}
+
+/* Empilhado em blocos (não em flex): assim os itens sempre ocupam só a largura disponível. */
+.grupo--coluna { display: block; }
+.grupo--coluna > * + * { margin-top: 0.75rem; }
+
+.grupo legend {
+  padding: 0 0.375rem;
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+.campo--largo { flex: 1 1 18rem; }
+.campo--curto input,
+.campo--curto select { min-width: 6rem; width: 6rem; }
+
+.campo--caixa {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.375rem;
+  padding-bottom: 0.5rem;
+}
+
+.opcoes {
+  display: flex;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  color: var(--texto);
+}
+
+.opcoes label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  cursor: pointer;
+}
+
+/* Caixas de marcação e botões de opção não usam o tamanho dos campos de texto. */
+.campo input[type="radio"],
+.campo input[type="checkbox"] {
+  min-width: 0;
+  width: auto;
+  padding: 0;
+  margin: 0;
+}
+
+.maiusculo { text-transform: uppercase; }
+
+.adicionar-obrigacao {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.vinculos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vinculo {
+  padding: 0.75rem;
+  border: 1px solid var(--linha);
+  border-left: 4px solid var(--acao);
+  border-radius: 4px;
+}
+
+.vinculo__cabecalho {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  color: var(--tinta);
+}
+
+.recorrencia {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+[hidden] { display: none !important; }
+
 .resumo {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -166,6 +388,8 @@ body {
 }
 
 .tabela-container {
+  /* "relative" prende os textos ocultos (leitor de tela) dentro da tabela; sem isso eles alargam a página. */
+  position: relative;
   overflow-x: auto;
   background: var(--papel);
   border: 1px solid var(--linha);
@@ -242,6 +466,19 @@ body {
   height: 1px;
   overflow: hidden;
   clip: rect(0 0 0 0);
+}
+
+@media (max-width: 48rem) {
+  /* minmax(0, 1fr) deixa a coluna encolher; sem isso a tabela larga estica a página toda. */
+  .layout { grid-template-columns: minmax(0, 1fr); align-content: start; }
+  .menu {
+    flex-direction: row;
+    align-items: center;
+    overflow-x: auto;
+    padding: 0.5rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--linha);
+  }
 }
 
 @media (max-width: 40rem) {
