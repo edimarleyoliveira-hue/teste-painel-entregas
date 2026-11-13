@@ -111,3 +111,12 @@ Passos para quem for avaliar conferir cada funcionalidade.
 - `{"ids":[]}`, `{"ids":["abc"]}` ou `{"ids":[0]}` → 400.
 
 ## O que ficou faltando ou você faria com mais tempo
+
+Todos os itens obrigatórios e os 4 bônus foram feitos. Com mais tempo, eu faria:
+
+- **Data mínima na entrega:** recusar data de entrega anterior ao primeiro dia da competência.
+- **Login e histórico:** registrar quem marcou ou desfez cada entrega e quando (auditoria). Com login, também daria para proteger os POSTs com token CSRF, em vez de só exigir JSON.
+- **404 separado de 409:** no desfazer, diferenciar "entrega não existe" (404) de "não está entregue" (409).
+- **Testes automatizados:** um script de testes da API (filtros, cadastro, marcação) rodando a cada mudança.
+- **Paginação:** com muitas entregas, a lista e a seleção de "todas" deveriam ser paginadas.
+- **Um único "hoje":** o status de cada linha é calculado no PHP e o resumo no MySQL. Nesta instalação os dois usam o fuso de São Paulo, mas o ideal seria calcular os dois no mesmo lugar.
