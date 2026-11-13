@@ -32,8 +32,16 @@ function parametroGet(string $nome): string
 }
 
 // Lê o corpo da requisição em JSON. Devolve null se não for um objeto JSON válido.
+// Exige o cabeçalho Content-Type: application/json. Um formulário de outro site não consegue
+// enviar esse cabeçalho sem a permissão do navegador, o que dificulta ataques CSRF.
 function lerCorpoJson(): ?array
 {
+    $tipo = $_SERVER['CONTENT_TYPE'] ?? '';
+
+    if (stripos($tipo, 'application/json') !== 0) {
+        responderJson(['erro' => 'Envie os dados em formato JSON (Content-Type: application/json).'], 415);
+    }
+
     $dados = json_decode(file_get_contents('php://input'), true);
 
     return is_array($dados) ? $dados : null;
