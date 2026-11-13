@@ -11,6 +11,7 @@ function listarEntregas(): void
         'empresa' => parametroGet('empresa'),
         'departamento' => parametroGet('departamento'),
         'status' => parametroGet('status'),
+        'competencia' => parametroGet('competencia'),
     ];
 
     if (mb_strlen($filtros['empresa']) > 150) {
@@ -23,6 +24,10 @@ function listarEntregas(): void
 
     if ($filtros['status'] !== '' && !in_array($filtros['status'], EntregaRepository::statusValidos(), true)) {
         responderJson(['erro' => 'Status inválido. Use pendente, atrasada ou entregue.'], 400);
+    }
+
+    if ($filtros['competencia'] !== '' && !competenciaValida($filtros['competencia'])) {
+        responderJson(['erro' => 'Competência inválida no filtro: use AAAA-MM (ex.: 2026-11).'], 400);
     }
 
     $repositorio = new EntregaRepository(Database::conexao());

@@ -24,7 +24,8 @@ class EntregaRepository
      * Filtros aceitos (todos opcionais e combináveis):
      * - empresa: parte da razão social;
      * - departamento: um de DEPARTAMENTOS;
-     * - status: um de statusValidos().
+     * - status: um de statusValidos();
+     * - competencia: AAAA-MM exato.
      */
     public function listar(array $filtros = []): array
     {
@@ -43,6 +44,11 @@ class EntregaRepository
 
         if (!empty($filtros['status']) && isset(self::CONDICOES_STATUS[$filtros['status']])) {
             $condicoes[] = '(' . self::CONDICOES_STATUS[$filtros['status']] . ')';
+        }
+
+        if (!empty($filtros['competencia'])) {
+            $condicoes[] = 'e.competencia = ?';
+            $parametros[] = $filtros['competencia'];
         }
 
         $where = $condicoes ? 'WHERE ' . implode(' AND ', $condicoes) : '';
