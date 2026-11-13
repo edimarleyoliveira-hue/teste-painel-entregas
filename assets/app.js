@@ -57,9 +57,27 @@ async function carregarResumo() {
   }
 }
 
+// Lê os campos do formulário de filtros e monta os parâmetros da URL (só os preenchidos).
+// URLSearchParams codifica caracteres especiais como & e ', então a busca chega intacta na API.
+function filtrosAtuais() {
+  const parametros = new URLSearchParams();
+  const dados = new FormData(document.getElementById('form-filtros'));
+
+  for (const [nome, valor] of dados) {
+    if (valor.trim() !== '') {
+      parametros.append(nome, valor.trim());
+    }
+  }
+
+  return parametros;
+}
+
 async function carregarEntregas() {
+  const filtros = filtrosAtuais().toString();
+  const url = filtros ? `${API}/entregas.php?${filtros}` : `${API}/entregas.php`;
+
   try {
-    const resposta = await fetch(`${API}/entregas.php`);
+    const resposta = await fetch(url);
     const dados = await resposta.json();
 
     if (!resposta.ok) {
@@ -80,7 +98,10 @@ function renderizarTabela() {
   const corpo = document.getElementById('lista-entregas');
 
   if (entregas.length === 0) {
-    corpo.innerHTML = '<tr><td colspan="7" class="tabela__vazio">Nenhuma entrega encontrada.</td></tr>';
+    const mensagem = filtrosAtuais().toString()
+      ? 'Nenhuma entrega encontrada para os filtros selecionados.'
+      : 'Nenhuma entrega encontrada.';
+    corpo.innerHTML = `<tr><td colspan="7" class="tabela__vazio">${mensagem}</td></tr>`;
     return;
   }
 
@@ -99,6 +120,16 @@ function renderizarTabela() {
     </tr>
   `).join('');
 }
+
+document.getElementById('form-filtros').addEventListener('submit', (evento) => {
+  evento.preventDefault();
+  carregarEntregas();
+});
+
+document.getElementById('limpar-filtros').addEventListener('click', () => {
+  document.getElementById('form-filtros').reset();
+  carregarEntregas();
+});
 
 carregarResumo();
 carregarEntregas();
