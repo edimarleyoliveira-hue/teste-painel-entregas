@@ -14,8 +14,11 @@ Marque o que você concluiu e descreva brevemente como implementou.
   - Formulário "Nova entrega" com empresa e obrigação (listas vindas do banco por `api/empresas.php` e `api/obrigacoes.php`), competência (`type="month"`) e vencimento (`type="date"`).
   - `POST api/entregas.php` com JSON `{empresa_id, obrigacao_id, competencia, vencimento}`. Valida tudo no servidor e grava sempre com `data_entrega` vazia. Responde 201 em caso de sucesso, 400 para dado inválido e 409 para duplicado.
   - Após salvar, a lista e o resumo são recarregados, o formulário é limpo e aparece a mensagem de sucesso. Em caso de erro, aparece a mensagem do servidor.
-- [ ] Marcar como entregue (uma linha)
-- [ ] Marcar várias como entregues (seleção)
+- [x] Marcar como entregue (uma linha)
+- [x] Marcar várias como entregues (seleção)
+  - Cada linha não entregue tem uma caixa de seleção e o botão "Marcar como entregue". O botão "Marcar selecionadas como entregues (N)" fica desabilitado com 0 selecionadas e mostra a quantidade.
+  - Os dois botões usam o mesmo endpoint, `POST api/marcar-entregues.php`, com `{"ids": [..]}`. A data gravada é a de hoje (`CURDATE()`).
+  - Depois da ação, a lista e o resumo são recarregados com os filtros que estão aplicados, a seleção é limpa e aparece "N entrega(s) marcada(s) como entregue(s)".
 - [ ] Bônus:
 
 Correção extra: `responderErro()` devolvia a mensagem técnica da exceção (`detalhe`) para o navegador. Agora ela vai só para o log do servidor (`error_log`).
@@ -35,6 +38,12 @@ Escolhas que você fez e por quê (estrutura do código, validações, regras qu
 - **Nasce sem data de entrega:** o INSERT grava `data_entrega` como `NULL` de forma fixa. Mesmo que alguém envie `data_entrega` no JSON, o valor é ignorado.
 - **Regras que interpretei:** o ano da competência e do vencimento é aceito entre 1900 e 2099, como trava contra digitação errada. Não exigi relação entre vencimento e competência (por exemplo, vencimento depois do mês da competência), porque o README não pede isso e há obrigações anuais com prazos variados. Depois de cadastrar, a lista recarrega mantendo os filtros ativos. Se o filtro for "Entregue", a nova linha, que é pendente ou atrasada, não aparece, mas o resumo é atualizado.
 - **Validação na tela (bônus):** campos obrigatórios conferidos antes do envio, para dar resposta rápida. Ela não substitui a validação do servidor.
+- **Data de entrega nunca é alterada:** a proteção está no próprio SQL: `UPDATE ... SET data_entrega = CURDATE() WHERE id IN (...) AND data_entrega IS NULL`. Mesmo que alguém chame a API direto com o id de uma entrega já entregue, a linha não é atingida. O `rowCount()` informa quantas foram realmente marcadas, e a mensagem avisa quando alguma foi ignorada.
+- **Validação da lista de ids:** precisa ser uma lista não vazia de inteiros positivos, com no máximo 500 itens. Ids repetidos contam uma vez só. Os marcadores do `IN (?, ?, ...)` são gerados pela quantidade de ids, e os valores vão separados do SQL.
+- **"Hoje" no mesmo relógio:** a data gravada vem do `CURDATE()` do banco, o mesmo relógio que o resumo usa para separar pendentes de atrasadas.
+- **Só JSON nos POSTs (proteção contra CSRF):** `lerCorpoJson()` exige `Content-Type: application/json` e responde 415 caso contrário. Um formulário HTML de outro site não consegue enviar esse cabeçalho sem a autorização do navegador, então fica difícil um site de terceiros cadastrar ou marcar entregas usando o navegador de quem está com o painel aberto. Isso vale para o cadastro e para a marcação. O projeto não tem login, então essa é uma proteção básica, não completa.
+- **Tela à prova de clique duplo:** enquanto a marcação está a caminho, os botões ficam bloqueados. Depois da ação, saem da seleção só as entregas enviadas; o que o usuário marcou e ainda não enviou continua marcado. Se a API falhar, o botão da linha volta a funcionar. Quando nada é marcado (por exemplo, porque outra pessoa já tinha entregue), a mensagem aparece no estilo de alerta.
+- **Seleção e filtros:** ao trocar os filtros, a seleção mantém só as entregas que continuam visíveis, para não marcar algo que o usuário não está vendo.
 - **Organização:** criei `EmpresaRepository` e `ObrigacaoRepository` no mesmo padrão do `EntregaRepository`. As funções de validação reaproveitáveis (`inteiroPositivo`, `competenciaValida`, `dataValida`, `lerCorpoJson`) ficam em `src/helpers.php`.
 
 ## Como testar
@@ -63,5 +72,14 @@ Passos para quem for avaliar conferir cada funcionalidade.
 - `POST api/entregas.php` com `{"empresa_id":1,"obrigacao_id":2,"competencia":"2026-13","vencimento":"2026-02-30"}` → 400 explicando a competência e o vencimento inválidos.
 - `{"empresa_id":999, ...}` → 400 "A empresa selecionada não está cadastrada."
 - Corpo que não é JSON → 400.
+
+**Marcar como entregue (tela):**
+1. Filtrar Status "Atrasada" e clicar em "Marcar como entregue" numa linha → aparece "1 entrega marcada como entregue.", a linha some da lista (o filtro continua aplicado) e os cards Entregues e Atrasadas mudam.
+2. Marcar 2 caixas → o botão em lote mostra "(2)". Clicar nele → aparece "2 entregas marcadas como entregues.".
+3. Linhas entregues não têm caixa nem botão.
+
+**Marcar como entregue (API direto):**
+- `POST api/marcar-entregues.php` com `{"ids":[1]}` (o id 1 já está entregue na carga inicial) → `marcadas: 0` e a data no banco não muda.
+- `{"ids":[]}`, `{"ids":["abc"]}` ou `{"ids":[0]}` → 400.
 
 ## O que ficou faltando ou você faria com mais tempo
