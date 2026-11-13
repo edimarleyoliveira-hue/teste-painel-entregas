@@ -6,8 +6,19 @@ let camposRecorrenciaObrigacao = null;
 
 const formObrigacao = document.getElementById('form-obrigacao');
 
+function filtrosObrigacoes() {
+  const parametros = new URLSearchParams();
+  for (const [nome, valor] of new FormData(document.getElementById('form-filtros-obrigacoes'))) {
+    if (valor.trim() !== '') {
+      parametros.append(nome, valor.trim());
+    }
+  }
+  return parametros;
+}
+
 async function carregarObrigacoes() {
-  const { ok, dados } = await requisicaoJson(`${API}/obrigacoes.php`);
+  const filtros = filtrosObrigacoes().toString();
+  const { ok, dados } = await requisicaoJson(`${API}/obrigacoes.php${filtros ? `?${filtros}` : ''}`);
   const corpo = document.getElementById('lista-obrigacoes');
 
   if (!ok) {
@@ -19,7 +30,8 @@ async function carregarObrigacoes() {
   obrigacoesCadastradas = dados;
 
   if (dados.length === 0) {
-    corpo.innerHTML = '<tr><td colspan="6" class="tabela__vazio">Nenhuma obrigação cadastrada.</td></tr>';
+    const mensagem = filtros ? 'Nenhuma obrigação encontrada para os filtros selecionados.' : 'Nenhuma obrigação cadastrada.';
+    corpo.innerHTML = `<tr><td colspan="6" class="tabela__vazio">${mensagem}</td></tr>`;
     return;
   }
 
@@ -34,6 +46,16 @@ async function carregarObrigacoes() {
     </tr>
   `).join('');
 }
+
+document.getElementById('form-filtros-obrigacoes').addEventListener('submit', (evento) => {
+  evento.preventDefault();
+  carregarObrigacoes();
+});
+
+document.getElementById('limpar-filtros-obrigacoes').addEventListener('click', () => {
+  document.getElementById('form-filtros-obrigacoes').reset();
+  carregarObrigacoes();
+});
 
 function mostrarErroObrigacao(mensagem) {
   const erro = document.getElementById('erro-obrigacao');
@@ -60,9 +82,9 @@ function abrirFormularioObrigacao(id) {
 document.getElementById('nova-obrigacao').addEventListener('click', () => abrirFormularioObrigacao(null));
 
 document.getElementById('lista-obrigacoes').addEventListener('click', (evento) => {
-  const botao = evento.target.closest('[data-editar-obrigacao]');
-  if (botao) {
-    abrirFormularioObrigacao(Number(botao.dataset.editarObrigacao));
+  const editar = evento.target.closest('[data-editar-obrigacao]');
+  if (editar) {
+    abrirFormularioObrigacao(Number(editar.dataset.editarObrigacao));
   }
 });
 

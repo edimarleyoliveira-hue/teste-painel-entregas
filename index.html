@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Painel de Entregas</title>
-  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="assets/style.css?v=3">
 </head>
 <body>
   <header class="topo">
@@ -205,6 +205,27 @@
         </div>
         <p class="tela__ajuda">A configuração cadastrada aqui é o <strong>padrão</strong>. Ao incluir a obrigação numa empresa, ela é copiada e pode ser ajustada só para aquela empresa.</p>
 
+        <form class="filtros" id="form-filtros-obrigacoes" aria-label="Filtros de obrigações">
+          <label class="campo campo--busca">
+            Nome
+            <input type="search" name="nome" maxlength="80" placeholder="Nome da obrigação">
+          </label>
+          <label class="campo">
+            Recorrência
+            <select name="recorrencia">
+              <option value="">Todas</option>
+              <option value="diaria">Diária</option>
+              <option value="semanal">Semanal</option>
+              <option value="mensal">Mensal</option>
+              <option value="trimestral">Trimestral</option>
+              <option value="semestral">Semestral</option>
+              <option value="anual">Anual</option>
+            </select>
+          </label>
+          <button type="submit" class="botao">Filtrar</button>
+          <button type="button" class="botao botao--secundario" id="limpar-filtros-obrigacoes">Limpar filtros</button>
+        </form>
+
         <div class="tabela-container">
           <table class="tabela">
             <thead>
@@ -376,13 +397,34 @@
     </form>
   </dialog>
 
+  <!-- ===================== HISTÓRICO DA ENTREGA (botão "Detalhes") ===================== -->
+  <dialog class="dialogo dialogo--estreito" id="dialogo-historico" aria-labelledby="titulo-dialogo-historico">
+    <h2 class="dialogo__titulo" id="titulo-dialogo-historico">Histórico</h2>
+    <p class="tela__ajuda">Quem marcou esta entrega como entregue ou a voltou para pendente, e quando.</p>
+    <div class="tabela-container">
+      <table class="tabela">
+        <thead>
+          <tr>
+            <th>Data e hora</th>
+            <th>Usuário</th>
+            <th>Ação</th>
+          </tr>
+        </thead>
+        <tbody id="lista-historico"></tbody>
+      </table>
+    </div>
+    <div class="dialogo__acoes">
+      <button type="button" class="botao botao--secundario" data-fechar>Fechar</button>
+    </div>
+  </dialog>
+
   <div class="aviso" id="aviso" role="status" aria-live="polite" hidden></div>
 
-  <script src="assets/app.js"></script>
-  <script src="assets/mascaras.js"></script>
-  <script src="assets/recorrencia.js"></script>
-  <script src="assets/empresas.js"></script>
-  <script src="assets/obrigacoes.js"></script>
-  <script src="assets/navegacao.js"></script>
+  <script src="assets/app.js?v=3"></script>
+  <script src="assets/mascaras.js?v=3"></script>
+  <script src="assets/recorrencia.js?v=3"></script>
+  <script src="assets/empresas.js?v=3"></script>
+  <script src="assets/obrigacoes.js?v=3"></script>
+  <script src="assets/navegacao.js?v=3"></script>
 </body>
 </html>

@@ -10,15 +10,37 @@ class ObrigacaoRepository
     {
     }
 
-    // Todas as obrigações com a configuração padrão e em quantas empresas são usadas.
-    public function listar(): array
+    /**
+     * Obrigações com a configuração padrão e em quantas empresas são usadas.
+     * Filtros opcionais e combináveis: nome (parte do nome) e recorrencia (um de Recorrencia::TIPOS).
+     */
+    public function listar(array $filtros = []): array
     {
+        $condicoes = [];
+        $parametros = [];
+
+        if (($filtros['nome'] ?? '') !== '') {
+            $condicoes[] = 'o.nome LIKE ?';
+            $parametros[] = '%' . escaparLike($filtros['nome']) . '%';
+        }
+
+        if (($filtros['recorrencia'] ?? '') !== '') {
+            $condicoes[] = 'o.recorrencia = ?';
+            $parametros[] = $filtros['recorrencia'];
+        }
+
+        $where = $condicoes ? 'WHERE ' . implode(' AND ', $condicoes) : '';
+
         $sql = "SELECT o.*,
                        (SELECT COUNT(*) FROM empresa_obrigacoes eo WHERE eo.obrigacao_id = o.id) AS total_empresas
                   FROM obrigacoes o
+                 {$where}
                  ORDER BY o.departamento ASC, o.nome ASC";
 
-        return array_map([$this, 'normalizar'], $this->pdo->query($sql)->fetchAll());
+        $consulta = $this->pdo->prepare($sql);
+        $consulta->execute($parametros);
+
+        return array_map([$this, 'normalizar'], $consulta->fetchAll());
     }
 
     public function buscar(int $id): ?array

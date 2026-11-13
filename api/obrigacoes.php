@@ -79,7 +79,15 @@ try {
                 }
                 responderJson($obrigacao);
             }
-            responderJson($repositorio->listar());
+
+            $filtros = ['nome' => parametroGet('nome'), 'recorrencia' => parametroGet('recorrencia')];
+            if (mb_strlen($filtros['nome']) > 80) {
+                responderJson(['erro' => 'A busca por nome aceita no máximo 80 caracteres.'], 400);
+            }
+            if ($filtros['recorrencia'] !== '' && !in_array($filtros['recorrencia'], Recorrencia::TIPOS, true)) {
+                responderJson(['erro' => 'Recorrência inválida. Use diaria, semanal, mensal, trimestral, semestral ou anual.'], 400);
+            }
+            responderJson($repositorio->listar($filtros));
             break;
         case 'POST':
             salvarObrigacao(null);
