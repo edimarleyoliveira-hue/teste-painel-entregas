@@ -86,6 +86,30 @@ class EntregaRepository
         return array_map('intval', $this->pdo->query($sql)->fetch());
     }
 
+    public function existe(int $empresaId, int $obrigacaoId, string $competencia): bool
+    {
+        $sql = "SELECT 1
+                  FROM entregas
+                 WHERE empresa_id = ? AND obrigacao_id = ? AND competencia = ?
+                 LIMIT 1";
+
+        $consulta = $this->pdo->prepare($sql);
+        $consulta->execute([$empresaId, $obrigacaoId, $competencia]);
+
+        return (bool) $consulta->fetchColumn();
+    }
+
+    // Toda entrega nova nasce sem data de entrega (NULL).
+    public function criar(int $empresaId, int $obrigacaoId, string $competencia, string $vencimento): int
+    {
+        $sql = "INSERT INTO entregas (empresa_id, obrigacao_id, competencia, vencimento, data_entrega)
+                VALUES (?, ?, ?, ?, NULL)";
+
+        $this->pdo->prepare($sql)->execute([$empresaId, $obrigacaoId, $competencia, $vencimento]);
+
+        return (int) $this->pdo->lastInsertId();
+    }
+
     // No LIKE, % e _ são curingas. Escapamos para buscar o texto literal digitado.
     private function escaparLike(string $texto): string
     {
