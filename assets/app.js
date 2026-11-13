@@ -165,7 +165,7 @@ function renderizarTabela() {
       <td class="tabela__selecao">${selecao}</td>
       <td>
         <span class="tabela__empresa">${escaparHtml(entrega.razao_social)}</span>
-        <span class="tabela__cnpj">${escaparHtml(entrega.cnpj)}</span>
+        <span class="tabela__cnpj">${escaparHtml(entrega.empresa_codigo)} · ${escaparHtml(entrega.documento)}</span>
       </td>
       <td>${escaparHtml(entrega.obrigacao)}</td>
       <td>${escaparHtml(entrega.departamento)}</td>

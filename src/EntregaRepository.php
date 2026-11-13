@@ -22,7 +22,7 @@ class EntregaRepository
 
     /**
      * Filtros aceitos (todos opcionais e combináveis):
-     * - empresa: parte da razão social;
+     * - empresa: parte da razão social, do nome fantasia ou do nome da obrigação;
      * - departamento: um de DEPARTAMENTOS;
      * - status: um de statusValidos();
      * - competencia: AAAA-MM exato.
@@ -32,9 +32,11 @@ class EntregaRepository
         $condicoes = [];
         $parametros = [];
 
+        // Busca livre: razão social, nome fantasia ou nome da obrigação.
         if (!empty($filtros['empresa'])) {
-            $condicoes[] = 'emp.razao_social LIKE ?';
-            $parametros[] = '%' . $this->escaparLike($filtros['empresa']) . '%';
+            $condicoes[] = '(emp.razao_social LIKE ? OR emp.nome_fantasia LIKE ? OR o.nome LIKE ?)';
+            $termo = '%' . escaparLike($filtros['empresa']) . '%';
+            array_push($parametros, $termo, $termo, $termo);
         }
 
         if (!empty($filtros['departamento'])) {
@@ -59,7 +61,9 @@ class EntregaRepository
                        e.data_entrega,
                        emp.id AS empresa_id,
                        emp.razao_social,
-                       emp.cnpj,
+                       emp.nome_fantasia,
+                       emp.codigo AS empresa_codigo,
+                       emp.documento,
                        o.nome AS obrigacao,
                        o.departamento
                   FROM entregas e
@@ -163,11 +167,5 @@ class EntregaRepository
         $consulta->execute([$id]);
 
         return $consulta->rowCount() === 1;
-    }
-
-    // No LIKE, % e _ são curingas. Escapamos para buscar o texto literal digitado.
-    private function escaparLike(string $texto): string
-    {
-        return addcslashes($texto, '\\%_');
     }
 }
