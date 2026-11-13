@@ -2,6 +2,8 @@
 
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/EntregaRepository.php';
+require_once __DIR__ . '/EmpresaRepository.php';
+require_once __DIR__ . '/ObrigacaoRepository.php';
 
 function responderJson($dados, int $status = 200): void
 {
