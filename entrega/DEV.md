@@ -1,7 +1,7 @@
 # Entrega – Teste de Desenvolvimento
 
 **Nome:** Edimarley Oliveira
-**Tempo utilizado:**
+**Tempo utilizado:** 2 horas
 
 ## O que foi feito
 
