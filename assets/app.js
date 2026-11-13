@@ -35,7 +35,8 @@ function mostrarAviso(mensagem, tipo = 'sucesso') {
   aviso.className = tipo === 'erro' ? 'aviso aviso--erro' : 'aviso';
   aviso.hidden = false;
   clearTimeout(mostrarAviso.timer);
-  mostrarAviso.timer = setTimeout(() => { aviso.hidden = true; }, 4000);
+  // Mensagens de erro ficam mais tempo na tela para dar tempo de ler o que corrigir.
+  mostrarAviso.timer = setTimeout(() => { aviso.hidden = true; }, tipo === 'erro' ? 8000 : 4000);
 }
 
 async function carregarResumo() {
@@ -121,6 +122,97 @@ function renderizarTabela() {
   `).join('');
 }
 
+// Preenche um <select> com opções vindas da API. new Option() trata o texto como texto puro.
+function preencherSelect(select, itens, rotulo) {
+  itens.forEach((item) => {
+    select.appendChild(new Option(rotulo(item), item.id));
+  });
+}
+
+async function carregarOpcoesCadastro() {
+  try {
+    const [respostaEmpresas, respostaObrigacoes] = await Promise.all([
+      fetch(`${API}/empresas.php`),
+      fetch(`${API}/obrigacoes.php`),
+    ]);
+
+    if (!respostaEmpresas.ok || !respostaObrigacoes.ok) {
+      mostrarAviso('Erro ao carregar empresas e obrigações para o cadastro.', 'erro');
+      return;
+    }
+
+    const empresas = await respostaEmpresas.json();
+    const obrigacoes = await respostaObrigacoes.json();
+
+    preencherSelect(document.getElementById('cadastro-empresa'), empresas, (e) => e.razao_social);
+    preencherSelect(document.getElementById('cadastro-obrigacao'), obrigacoes, (o) => `${o.nome} (${o.departamento})`);
+  } catch (erro) {
+    mostrarAviso('Não foi possível conectar à API.', 'erro');
+  }
+}
+
+// Validação na tela (ajuda o usuário). A validação que vale é a do servidor.
+function validarCadastro(dados) {
+  const erros = [];
+
+  if (!dados.empresa_id) erros.push('Selecione a empresa.');
+  if (!dados.obrigacao_id) erros.push('Selecione a obrigação.');
+  if (!dados.competencia) {
+    erros.push('Informe a competência (mês e ano).');
+  } else if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(dados.competencia)) {
+    erros.push('Competência inválida: use AAAA-MM (ex.: 2026-11).');
+  }
+
+  if (!dados.vencimento) {
+    erros.push('Informe o vencimento.');
+  } else if (!/^\d{4}-\d{2}-\d{2}$/.test(dados.vencimento)) {
+    erros.push('Vencimento inválido: informe uma data válida.');
+  }
+
+  return erros;
+}
+
+async function cadastrarEntrega(evento) {
+  evento.preventDefault();
+
+  const formulario = evento.target;
+  const dados = Object.fromEntries(new FormData(formulario));
+  const erros = validarCadastro(dados);
+
+  if (erros.length > 0) {
+    mostrarAviso(erros.join(' '), 'erro');
+    return;
+  }
+
+  const botao = document.getElementById('cadastro-salvar');
+  botao.disabled = true;
+
+  try {
+    const resposta = await fetch(`${API}/entregas.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dados),
+    });
+    const resultado = await resposta.json();
+
+    if (!resposta.ok) {
+      mostrarAviso(resultado.erro || 'Não foi possível cadastrar a entrega.', 'erro');
+      return;
+    }
+
+    formulario.reset();
+    mostrarAviso(resultado.mensagem || 'Entrega cadastrada com sucesso.');
+    carregarResumo();
+    carregarEntregas();
+  } catch (erro) {
+    mostrarAviso('Não foi possível conectar à API.', 'erro');
+  } finally {
+    botao.disabled = false;
+  }
+}
+
+document.getElementById('form-cadastro').addEventListener('submit', cadastrarEntrega);
+
 document.getElementById('form-filtros').addEventListener('submit', (evento) => {
   evento.preventDefault();
   carregarEntregas();
@@ -133,3 +225,4 @@ document.getElementById('limpar-filtros').addEventListener('click', () => {
 
 carregarResumo();
 carregarEntregas();
+carregarOpcoesCadastro();

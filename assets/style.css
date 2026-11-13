@@ -81,6 +81,33 @@ body {
 
 .resumo__rotulo { color: var(--texto-suave); }
 
+.cadastro {
+  background: var(--papel);
+  border: 1px solid var(--linha);
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.cadastro__titulo {
+  margin: 0 0 0.75rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+.cadastro__form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.botao:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .filtros {
   display: flex;
   flex-wrap: wrap;
