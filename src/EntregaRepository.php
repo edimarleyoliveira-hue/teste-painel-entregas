@@ -110,6 +110,31 @@ class EntregaRepository
         return (int) $this->pdo->lastInsertId();
     }
 
+    /**
+     * Marca as entregas informadas como entregues, com a data de hoje.
+     * O "AND data_entrega IS NULL" garante que uma entrega já entregue nunca
+     * tem a data alterada, nem se alguém chamar a API diretamente.
+     * Devolve quantas entregas foram de fato marcadas.
+     */
+    public function marcarComoEntregues(array $ids): int
+    {
+        if ($ids === []) {
+            return 0;
+        }
+
+        $marcadores = implode(', ', array_fill(0, count($ids), '?'));
+
+        $sql = "UPDATE entregas
+                   SET data_entrega = CURDATE()
+                 WHERE id IN ({$marcadores})
+                   AND data_entrega IS NULL";
+
+        $consulta = $this->pdo->prepare($sql);
+        $consulta->execute(array_values($ids));
+
+        return $consulta->rowCount();
+    }
+
     // No LIKE, % e _ são curingas. Escapamos para buscar o texto literal digitado.
     private function escaparLike(string $texto): string
     {
