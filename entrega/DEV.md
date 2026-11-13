@@ -19,7 +19,8 @@ Marque o que você concluiu e descreva brevemente como implementou.
   - Cada linha não entregue tem uma caixa de seleção e o botão "Marcar como entregue". O botão "Marcar selecionadas como entregues (N)" fica desabilitado com 0 selecionadas e mostra a quantidade.
   - Os dois botões usam o mesmo endpoint, `POST api/marcar-entregues.php`, com `{"ids": [..]}`. A data gravada é a de hoje (`CURDATE()`).
   - Depois da ação, a lista e o resumo são recarregados com os filtros que estão aplicados, a seleção é limpa e aparece "N entrega(s) marcada(s) como entregue(s)".
-- [ ] Bônus:
+- [x] Bônus: selecionar todas as entregas visíveis de uma vez
+  - Caixa no cabeçalho da coluna de seleção. Um clique seleciona todas as entregas não entregues que estão na lista (respeitando os filtros); outro clique desmarca. Fica "meio marcada" quando só algumas estão selecionadas e desabilitada quando não há nada para selecionar.
 
 Correção extra: `responderErro()` devolvia a mensagem técnica da exceção (`detalhe`) para o navegador. Agora ela vai só para o log do servidor (`error_log`).
 
@@ -77,6 +78,11 @@ Passos para quem for avaliar conferir cada funcionalidade.
 1. Filtrar Status "Atrasada" e clicar em "Marcar como entregue" numa linha → aparece "1 entrega marcada como entregue.", a linha some da lista (o filtro continua aplicado) e os cards Entregues e Atrasadas mudam.
 2. Marcar 2 caixas → o botão em lote mostra "(2)". Clicar nele → aparece "2 entregas marcadas como entregues.".
 3. Linhas entregues não têm caixa nem botão.
+
+**Selecionar todas (bônus):**
+1. Filtrar Status "Pendente" e clicar na caixa do cabeçalho → todas as linhas da lista ficam marcadas e o botão mostra a quantidade.
+2. Desmarcar uma linha → a caixa do cabeçalho fica "meio marcada".
+3. Clicar em "Marcar selecionadas como entregues" → todas são marcadas de uma vez.
 
 **Marcar como entregue (API direto):**
 - `POST api/marcar-entregues.php` com `{"ids":[1]}` (o id 1 já está entregue na carga inicial) → `marcadas: 0` e a data no banco não muda.
