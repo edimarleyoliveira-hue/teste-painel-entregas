@@ -21,6 +21,13 @@ Marque o que você concluiu e descreva brevemente como implementou.
   - Depois da ação, a lista e o resumo são recarregados com os filtros que estão aplicados, a seleção é limpa e aparece "N entrega(s) marcada(s) como entregue(s)".
 - [x] Bônus: selecionar todas as entregas visíveis de uma vez
   - Caixa no cabeçalho da coluna de seleção. Um clique seleciona todas as entregas não entregues que estão na lista (respeitando os filtros); outro clique desmarca. Fica "meio marcada" quando só algumas estão selecionadas e desabilitada quando não há nada para selecionar.
+- [x] Bônus: filtro por competência
+  - Campo "Competência" (mês e ano) na barra de filtros, combinável com os outros. A API aceita `?competencia=AAAA-MM` e responde 400 se o formato for inválido.
+- [x] Bônus: escolher a data de entrega (não pode ser futura)
+  - Campo "Data da entrega" ao lado do botão em lote. Começa com a data de hoje, e o calendário não deixa escolher uma data futura. Vale para o botão de cada linha e para o botão em lote.
+  - A API aceita `data_entrega` opcional em `POST api/marcar-entregues.php`. Sem data, grava a data de hoje.
+- [x] Bônus: desfazer uma entrega marcada por engano
+  - Linhas entregues têm o botão "Desfazer", que pede confirmação e chama `POST api/desfazer-entrega.php` com `{"id": N}`. A entrega volta a ficar sem data de entrega (Pendente ou Atrasada, conforme o vencimento).
 
 Correção extra: `responderErro()` devolvia a mensagem técnica da exceção (`detalhe`) para o navegador. Agora ela vai só para o log do servidor (`error_log`).
 
@@ -44,6 +51,13 @@ Escolhas que você fez e por quê (estrutura do código, validações, regras qu
 - **"Hoje" no mesmo relógio:** a data gravada vem do `CURDATE()` do banco, o mesmo relógio que o resumo usa para separar pendentes de atrasadas.
 - **Só JSON nos POSTs (proteção contra CSRF):** `lerCorpoJson()` exige `Content-Type: application/json` e responde 415 caso contrário. Um formulário HTML de outro site não consegue enviar esse cabeçalho sem a autorização do navegador, então fica difícil um site de terceiros cadastrar ou marcar entregas usando o navegador de quem está com o painel aberto. Isso vale para o cadastro e para a marcação. O projeto não tem login, então essa é uma proteção básica, não completa.
 - **Tela à prova de clique duplo:** enquanto a marcação está a caminho, os botões ficam bloqueados. Depois da ação, saem da seleção só as entregas enviadas; o que o usuário marcou e ainda não enviou continua marcado. Se a API falhar, o botão da linha volta a funcionar. Quando nada é marcado (por exemplo, porque outra pessoa já tinha entregue), a mensagem aparece no estilo de alerta.
+- **Data de entrega escolhida (bônus):** o servidor valida que é uma data real e que não é futura. "Hoje" vem do banco (`SELECT CURDATE()`), o mesmo relógio do resumo e dos filtros. O SQL usa `SET data_entrega = COALESCE(?, CURDATE())`: sem data informada, vale hoje. A trava `AND data_entrega IS NULL` continua valendo, então escolher uma data nunca altera uma entrega que já estava entregue. Na tela, o campo começa em hoje, volta para hoje depois de cada marcação e se atualiza sozinho se o dia virar com a página aberta, para não gravar a data de ontem sem querer.
+  - Limite que não implementei: não há data mínima. O servidor aceita uma data muito antiga, por exemplo anterior à competência. Com mais tempo, eu recusaria datas anteriores ao primeiro dia da competência.
+- **Desfazer (bônus) x "data não pode ser alterada":** com franqueza, desfazer e marcar de novo é, na prática, um jeito de corrigir a data. Isso é intencional, porque é exatamente o que o bônus pede ("desfazer uma entrega marcada por engano"). O que mantive:
+  - não existe nenhum caminho para sobrescrever a data de uma entrega entregue em um passo só, nem pela API;
+  - a correção exige duas ações explícitas (desfazer, com confirmação na tela, e marcar de novo);
+  - o UPDATE do desfazer só atinge entregas que estão entregues (`AND data_entrega IS NOT NULL`); para as demais, responde 409. Uso a mesma mensagem para "não existe" e "não está entregue", como no endpoint de marcar.
+  - Não tem: registro de quem desfez e quando (auditoria), porque o projeto não tem login. Num sistema real, eu guardaria esse histórico e poderia limitar o desfazer, por exemplo, ao mesmo dia ou a quem marcou.
 - **Seleção e filtros:** ao trocar os filtros, a seleção mantém só as entregas que continuam visíveis, para não marcar algo que o usuário não está vendo.
 - **Organização:** criei `EmpresaRepository` e `ObrigacaoRepository` no mesmo padrão do `EntregaRepository`. As funções de validação reaproveitáveis (`inteiroPositivo`, `competenciaValida`, `dataValida`, `lerCorpoJson`) ficam em `src/helpers.php`.
 
@@ -83,6 +97,14 @@ Passos para quem for avaliar conferir cada funcionalidade.
 1. Filtrar Status "Pendente" e clicar na caixa do cabeçalho → todas as linhas da lista ficam marcadas e o botão mostra a quantidade.
 2. Desmarcar uma linha → a caixa do cabeçalho fica "meio marcada".
 3. Clicar em "Marcar selecionadas como entregues" → todas são marcadas de uma vez.
+
+**Filtro por competência (bônus):** escolher o mês atual no campo "Competência" e clicar em "Filtrar" → só aparecem entregas daquela competência. `api/entregas.php?competencia=2026-13` → 400.
+
+**Data de entrega (bônus):**
+1. Trocar "Data da entrega" para ontem e marcar uma linha → a coluna "Entregue em" mostra a data de ontem.
+2. Pela API, `{"ids":[3],"data_entrega":"<amanhã>"}` → 400 "A data de entrega não pode ser uma data futura."
+
+**Desfazer (bônus):** filtrar Status "Entregue", clicar em "Desfazer" numa linha e confirmar → aparece "Entrega desfeita...", a linha sai do filtro e os cards voltam. Pela API, desfazer uma entrega que não está entregue → 409.
 
 **Marcar como entregue (API direto):**
 - `POST api/marcar-entregues.php` com `{"ids":[1]}` (o id 1 já está entregue na carga inicial) → `marcadas: 0` e a data no banco não muda.
