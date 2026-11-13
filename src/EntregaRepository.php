@@ -2,12 +2,51 @@
 
 class EntregaRepository
 {
+    public const DEPARTAMENTOS = ['Fiscal', 'Pessoal', 'Contábil'];
+
+    // Mesma regra de status usada no resumo(), escrita em SQL.
+    private const CONDICOES_STATUS = [
+        'entregue' => 'e.data_entrega IS NOT NULL',
+        'pendente' => 'e.data_entrega IS NULL AND e.vencimento >= CURDATE()',
+        'atrasada' => 'e.data_entrega IS NULL AND e.vencimento < CURDATE()',
+    ];
+
     public function __construct(private PDO $pdo)
     {
     }
 
-    public function listar(): array
+    public static function statusValidos(): array
     {
+        return array_keys(self::CONDICOES_STATUS);
+    }
+
+    /**
+     * Filtros aceitos (todos opcionais e combináveis):
+     * - empresa: parte da razão social;
+     * - departamento: um de DEPARTAMENTOS;
+     * - status: um de statusValidos().
+     */
+    public function listar(array $filtros = []): array
+    {
+        $condicoes = [];
+        $parametros = [];
+
+        if (!empty($filtros['empresa'])) {
+            $condicoes[] = 'emp.razao_social LIKE ?';
+            $parametros[] = '%' . $this->escaparLike($filtros['empresa']) . '%';
+        }
+
+        if (!empty($filtros['departamento'])) {
+            $condicoes[] = 'o.departamento = ?';
+            $parametros[] = $filtros['departamento'];
+        }
+
+        if (!empty($filtros['status']) && isset(self::CONDICOES_STATUS[$filtros['status']])) {
+            $condicoes[] = '(' . self::CONDICOES_STATUS[$filtros['status']] . ')';
+        }
+
+        $where = $condicoes ? 'WHERE ' . implode(' AND ', $condicoes) : '';
+
         $sql = "SELECT e.id,
                        e.competencia,
                        e.vencimento,
@@ -20,9 +59,12 @@ class EntregaRepository
                   FROM entregas e
                   JOIN empresas emp ON emp.id = e.empresa_id
                   JOIN obrigacoes o ON o.id = e.obrigacao_id
+                 {$where}
                  ORDER BY e.vencimento ASC, emp.razao_social ASC";
 
-        $entregas = $this->pdo->query($sql)->fetchAll();
+        $consulta = $this->pdo->prepare($sql);
+        $consulta->execute($parametros);
+        $entregas = $consulta->fetchAll();
 
         foreach ($entregas as &$entrega) {
             $entrega['id'] = (int) $entrega['id'];
@@ -42,5 +84,11 @@ class EntregaRepository
                   FROM entregas";
 
         return array_map('intval', $this->pdo->query($sql)->fetch());
+    }
+
+    // No LIKE, % e _ são curingas. Escapamos para buscar o texto literal digitado.
+    private function escaparLike(string $texto): string
+    {
+        return addcslashes($texto, '\\%_');
     }
 }
