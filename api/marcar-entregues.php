@@ -39,7 +39,23 @@ try {
     }
 
     $repositorio = new EntregaRepository(Database::conexao());
-    $marcadas = $repositorio->marcarComoEntregues(array_values($idsValidos));
+
+    // Data de entrega opcional (bônus). Sem data, vale a data de hoje.
+    $valorData = $dados['data_entrega'] ?? null;
+    $dataEntrega = is_string($valorData) ? trim($valorData) : null;
+
+    if ($valorData !== null && !is_string($valorData)) {
+        responderJson(['erro' => 'Data de entrega inválida: envie a data como texto no formato AAAA-MM-DD.'], 400);
+    } elseif ($dataEntrega === null || $dataEntrega === '') {
+        $dataEntrega = null;
+    } elseif (!dataValida($dataEntrega)) {
+        responderJson(['erro' => 'Data de entrega inválida: use o formato AAAA-MM-DD com uma data que exista no calendário.'], 400);
+    } elseif ($dataEntrega > $repositorio->hoje()) {
+        // Datas AAAA-MM-DD podem ser comparadas como texto.
+        responderJson(['erro' => 'A data de entrega não pode ser uma data futura.'], 400);
+    }
+
+    $marcadas = $repositorio->marcarComoEntregues(array_values($idsValidos), $dataEntrega);
 
     $mensagem = $marcadas === 1
         ? '1 entrega marcada como entregue.'

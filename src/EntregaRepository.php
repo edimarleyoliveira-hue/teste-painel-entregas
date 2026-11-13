@@ -116,13 +116,20 @@ class EntregaRepository
         return (int) $this->pdo->lastInsertId();
     }
 
+    // Data de hoje segundo o banco: o mesmo relógio usado no resumo e nos status.
+    public function hoje(): string
+    {
+        return $this->pdo->query('SELECT CURDATE()')->fetchColumn();
+    }
+
     /**
-     * Marca as entregas informadas como entregues, com a data de hoje.
+     * Marca as entregas informadas como entregues, com a data escolhida
+     * ou, se não vier data ($data = null), com a data de hoje.
      * O "AND data_entrega IS NULL" garante que uma entrega já entregue nunca
      * tem a data alterada, nem se alguém chamar a API diretamente.
      * Devolve quantas entregas foram de fato marcadas.
      */
-    public function marcarComoEntregues(array $ids): int
+    public function marcarComoEntregues(array $ids, ?string $data = null): int
     {
         if ($ids === []) {
             return 0;
@@ -131,12 +138,12 @@ class EntregaRepository
         $marcadores = implode(', ', array_fill(0, count($ids), '?'));
 
         $sql = "UPDATE entregas
-                   SET data_entrega = CURDATE()
+                   SET data_entrega = COALESCE(?, CURDATE())
                  WHERE id IN ({$marcadores})
                    AND data_entrega IS NULL";
 
         $consulta = $this->pdo->prepare($sql);
-        $consulta->execute(array_values($ids));
+        $consulta->execute([$data, ...array_values($ids)]);
 
         return $consulta->rowCount();
     }

@@ -30,6 +30,14 @@ function formatarData(data) {
   return `${dia}/${mes}/${ano}`;
 }
 
+// Data de hoje no formato AAAA-MM-DD, pelo relógio do computador (sem converter fuso).
+function hojeIso() {
+  const agora = new Date();
+  const mes = String(agora.getMonth() + 1).padStart(2, '0');
+  const dia = String(agora.getDate()).padStart(2, '0');
+  return `${agora.getFullYear()}-${mes}-${dia}`;
+}
+
 // Recebe AAAA-MM e devolve MM/AAAA.
 function formatarCompetencia(competencia) {
   const [ano, mes] = competencia.split('-');
@@ -172,8 +180,37 @@ function renderizarTabela() {
 }
 
 // Envia os ids para a API. Serve para uma linha (lista com 1 id) e para várias.
+// Data que preenchemos automaticamente no campo "Data da entrega".
+let dataPadrao = hojeIso();
+
+// Se o dia virou com a página aberta, o campo que ainda está com a data automática
+// passa para o novo "hoje" (e o limite máximo também), para não gravar ontem sem querer.
+function atualizarCampoData() {
+  const campo = document.getElementById('data-entrega');
+  const hoje = hojeIso();
+
+  if (campo.value === dataPadrao) {
+    campo.value = hoje;
+  }
+  dataPadrao = hoje;
+  campo.max = hoje;
+}
+
 // Devolve true se deu certo.
 async function marcarComoEntregues(ids) {
+  atualizarCampoData();
+  const dataEntrega = document.getElementById('data-entrega').value;
+
+  // Validação na tela; o servidor confere de novo.
+  if (!dataEntrega) {
+    mostrarAviso('Informe a data da entrega.', 'erro');
+    return false;
+  }
+  if (dataEntrega > hojeIso()) {
+    mostrarAviso('A data de entrega não pode ser uma data futura.', 'erro');
+    return false;
+  }
+
   enviando = true;
   atualizarBotaoLote();
 
@@ -181,7 +218,7 @@ async function marcarComoEntregues(ids) {
     const resposta = await fetch(`${API}/marcar-entregues.php`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids }),
+      body: JSON.stringify({ ids, data_entrega: dataEntrega }),
     });
     const resultado = await resposta.json();
 
@@ -192,6 +229,8 @@ async function marcarComoEntregues(ids) {
 
     // Tira da seleção só o que foi enviado; o resto do que o usuário marcou continua marcado.
     ids.forEach((id) => selecionadas.delete(id));
+    // Uma data escolhida vale só para esta marcação: o campo volta para hoje.
+    document.getElementById('data-entrega').value = dataPadrao;
     mostrarAviso(resultado.mensagem, resultado.marcadas > 0 ? 'sucesso' : 'erro');
     // Recarrega com os filtros que estão nos campos, então eles continuam valendo.
     await Promise.all([carregarResumo(), carregarEntregas()]);
@@ -358,3 +397,8 @@ document.getElementById('limpar-filtros').addEventListener('click', () => {
 carregarResumo();
 carregarEntregas();
 carregarOpcoesCadastro();
+// Campo "Data da entrega": começa em hoje e não deixa escolher data futura.
+document.getElementById('data-entrega').value = dataPadrao;
+atualizarCampoData();
+window.addEventListener('focus', atualizarCampoData);
+
