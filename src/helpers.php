@@ -4,6 +4,11 @@ require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/EntregaRepository.php';
 require_once __DIR__ . '/EmpresaRepository.php';
 require_once __DIR__ . '/ObrigacaoRepository.php';
+require_once __DIR__ . '/Documento.php';
+require_once __DIR__ . '/EmpresaValidador.php';
+require_once __DIR__ . '/Calendario.php';
+require_once __DIR__ . '/Recorrencia.php';
+require_once __DIR__ . '/GeradorEntregas.php';
 
 function responderJson($dados, int $status = 200): void
 {
@@ -21,6 +26,12 @@ function responderErro(Throwable $e): void
     responderJson([
         'erro' => 'Não foi possível concluir a operação.',
     ], 500);
+}
+
+// No LIKE, % e _ são curingas. Escapamos para buscar o texto literal digitado.
+function escaparLike(string $texto): string
+{
+    return addcslashes($texto, '\\%_');
 }
 
 // Lê um parâmetro da URL como texto. Ignora valores que não são texto (ex.: ?empresa[]=x).
@@ -47,12 +58,22 @@ function lerCorpoJson(): ?array
     return is_array($dados) ? $dados : null;
 }
 
-// Pega um campo de texto do corpo. Valores que não são texto viram ''.
+// Pega um campo de texto do corpo. Números viram texto; outros tipos (lista, true...) viram ''.
 function textoDe(array $dados, string $campo): string
 {
     $valor = $dados[$campo] ?? '';
 
+    if (is_int($valor) || is_float($valor)) {
+        return (string) $valor;
+    }
+
     return is_string($valor) ? trim($valor) : '';
+}
+
+// Data AAAA-MM-DD à meia-noite exata (o "!" zera a hora; evita surpresas com horário de verão).
+function dataDe(string $valor): DateTimeImmutable
+{
+    return DateTimeImmutable::createFromFormat('!Y-m-d', $valor);
 }
 
 // Aceita 5 ou "5". Recusa 0, negativos, decimais, true, listas etc.
